@@ -9,12 +9,13 @@ class Camera
 public:
 	Camera(const MyVec3& _eye, const MyVec3& _front,const MyVec3& _up, double _viewAngle):
 	eye(_eye), front(MyVec3(_front).unit()), up(MyVec3(_up).unit()), viewAngle(_viewAngle){
-		right = front.cross(up);
+		//right = front.cross(up);
+		right = cross(front,up);
 		viewAngleScale = std::tan(viewAngle * 0.5 * PI / 180) * 2;
 	};
 	~Camera(){};
 
-	const Ray emit(double sx, double sy);
+	Ray emit(double sx, double sy);
 
 private:
 	void emit(double sx, double sy, Ray& ray); // sx,sy in [0,1]
