@@ -5,7 +5,6 @@
 #include "sphere.h"
 #include "myVec3.h"
 #include "color.h"
-
 class Light
 {
 public:

@@ -9,15 +9,12 @@ class Camera
 public:
 	Camera(const MyVec3& _eye, const MyVec3& _front,const MyVec3& _up, double _viewAngle):
 	eye(_eye), front(MyVec3(_front).unit()), up(MyVec3(_up).unit()), viewAngle(_viewAngle){
-		//right = front.cross(up);
-		right = cross(front,up);
+		right = MyVec3::cross(front,up);
 		viewAngleScale = std::tan(viewAngle * 0.5 * PI / 180) * 2;
 	};
 	~Camera(){};
 
 	Ray emit(double sx, double sy);
-
-private:
 	void emit(double sx, double sy, Ray& ray); // sx,sy in [0,1]
 
 	MyVec3 eye, front, up; // 眼睛位置,前方单位向量，上方单位向量

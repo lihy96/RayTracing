@@ -39,27 +39,23 @@ public:
 	MyVec3 unit();
 	bool isZeroVector();
 
-	
-};
-
-const double dot(const MyVec3& A, const MyVec3& B){
-	return A.x * B.x + A.y * B.y + A.z * B.z;
-}
-
-const MyVec3 cross(const MyVec3& A, const MyVec3& B){
-	return MyVec3(A.y * B.z - A.z * B.y , A.z * B.x - A.x * B.z , A.x * B.y - A.y * B.x);
-}
-
-const MyVec3& normalize(MyVec3& A){
-	double length = A.module();
-	if(fabs(length) > EPS)
-		A /= length;
-	else{
-		exit(99);
-		A = MyVec3(0,0,1);
+	static const double dot(const MyVec3& A, const MyVec3& B){
+		return A.x * B.x + A.y * B.y + A.z * B.z;
 	}
-	return A;
-}
 
+	static const MyVec3 cross(const MyVec3& A, const MyVec3& B){
+		return MyVec3(A.y * B.z - A.z * B.y , A.z * B.x - A.x * B.z , A.x * B.y - A.y * B.x);
+	}
 
+	static const MyVec3& normalize(MyVec3& A){
+		double length = A.module();
+		if(fabs(length) > EPS)
+			A /= length;
+		else{
+			exit(99);
+			A = MyVec3(0,0,1);
+		}
+		return A;
+	}
+};
 #endif

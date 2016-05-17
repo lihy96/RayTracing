@@ -68,9 +68,9 @@ public:
 		//	f(l->v) = diffuseColor + specularColor * dot(r, v)^s / dot(n, l)
 		//=>f(l->v) = diffuseColor + specularColor * dot(n, h)^s / dot(n, l)
 		//=>f(l->v) = diffuseColor + specularColor * dot(n, h)^s    [used]
-		double NdotL = std::max(dot(normal,L), 0.0);
+		double NdotL = std::max(MyVec3::dot(normal,L), 0.0);
 		MyVec3 H = (L - ray).unit();
-		double NdotH = std::max(dot(normal, H), 0.0);
+		double NdotH = std::max(MyVec3::dot(normal, H), 0.0);
 		re = NdotL * diffuse * color * light + std::pow(NdotH, shininess) * specular * light;       
 	}
 };

@@ -13,7 +13,7 @@ public:
 
 	const MyVec3& getOri() const { return origin; }
 	const MyVec3& getDir() const { return direction; }
-	void setOri(const MyVec3& ori){	origin = origin;	}	
+	void setOri(const MyVec3& ori){	origin = ori;	}	
 	void setDir(const MyVec3& dir){	direction = MyVec3(dir).unit(); }
 };
 

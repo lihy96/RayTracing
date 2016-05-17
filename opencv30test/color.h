@@ -8,8 +8,8 @@ class Color
 public:
 	Color(double r = 0, double g = 0, double b = 0) : color(b , g , r){};
 	~Color(){};
-	const cv::Vec3d& getColor()const { return color; }
-	const cv::Vec3d getImgColor()const {
+	const cv::Vec3d& getColor() const { return color; }
+	const cv::Vec3d getImgColor() const {
 		return cv::Vec3d(color[0] > 1 ? 1 : color[0],
 					 color[1] > 1 ? 1 : color[1],
 					 color[2] > 1 ? 1 : color[2]);
@@ -19,7 +19,6 @@ public:
 	const double b() const { return color[0]; }
 
 	friend Color operator + ( const Color& , const Color& );
-	friend Color operator - ( const Color& , const Color& );
 	friend Color operator * ( const Color& , const Color& );
 	friend Color operator * ( const double& ,const Color& );
 };

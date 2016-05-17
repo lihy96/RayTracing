@@ -7,7 +7,7 @@ class IntersectResult
 public:
 	IntersectResult() : 
 		intersectPoint(0,0,0),
-		normalVec(0,0,1),
+		normalVec(0,0,0),
 		distance(0.0){};
 	~IntersectResult(){};
 	

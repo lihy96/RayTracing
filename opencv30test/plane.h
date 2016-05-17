@@ -11,9 +11,9 @@ public:
 	//=>c = b / cosA
 	int intersect(const Ray& ray, IntersectResult& result) const
 	{
-		double cosA = -dot(normalVec, ray.getDir());	
+		double cosA = -MyVec3::dot(normalVec, ray.getDir());	
 		if (cosA > 0){
-			double delta = dot(normalVec, ray.getOri());
+			double delta = MyVec3::dot(normalVec, ray.getOri());
 			double b = od + delta;
 			result.distance = b / cosA;
 			result.intersectPoint = ray.getOri() + result.distance * ray.getDir();

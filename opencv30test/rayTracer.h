@@ -1,5 +1,11 @@
 #ifndef RAYTRACER_H
 #define RAYTRACER_H
+#define DEBUG
+
+#ifdef DEBUG
+#include "all.h"
+#endif
+
 
 #include "myMat.h"
 #include "myObj.h"
