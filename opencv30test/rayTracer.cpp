@@ -92,32 +92,7 @@ int RayTracer::findNearestNoAABB(const Ray& ray, const MyObj& scene, IntersectRe
 
 
 
-
-
-
-
-//#define DEBUG_
 int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& result){
-
-#ifdef DEBUG_
-	cout << "-------------" << endl;
-	for(int i = 0;i < 8;i++){
-		for(int j = 0;j < 8;j++){
-			for(int k = 0;k < 8;k++){
-				cout << allGrids[i][j][k].sphere_vec.size() << endl;
-				cout << allGrids[i][j][k].plane_vec.size() << endl;
-				cout << allGrids[i][j][k].plight_vec.size() << endl;
-			}
-
-		}
-
-	}
-	//exit(9);
-#endif
-
-
-
-
 	//	X/Y/Z: current coordinate of grid 
 	
 	int gridSize = Config::GRIDSIZE;
@@ -204,31 +179,28 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 	//	find the first intersection
 	int re = Config::MISS;
 	while (true){
-		//int i = 0;
+
 		
 		for (auto& it : allGrids[X][Y][Z].sphere_vec){	
-			//cout << "1--" << endl;
-			//cout << allGrids[X][Y][Z].sphere_vec.size() << endl;
+
 			if (nearest(it, ray, scene, result, re)){
 				goto closer;
 			}
 		}
 		for (auto& it : allGrids[X][Y][Z].plane_vec){
-			//cout << "2--" << endl;
-			//cout << allGrids[X][Y][Z].plane_vec.size() << endl;
+
 			if (nearest(it, ray, scene, result, re)){
 				goto closer;
 			}
 		}
 
 		for (auto& it : allGrids[X][Y][Z].plight_vec){
-			//cout << "3--" << endl;
-			//cout << allGrids[X][Y][Z].plight_vec.size() << endl;
+
 			if (nearest(it, ray, scene, result, re)){
 				goto closer;
 			}
 		}
-		//cout << "4--" << endl;
+
 		if (tmax.x < tmax.y){
 			if (tmax.x < tmax.z){
 				X += stepX;
@@ -258,12 +230,7 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 			}
 		}
 	}
-
-
-
-
 closer:
-	//cout << tmax << tdelta << endl;exit(9);
 	//	find the correct intersection
 	while (true){
 		for (auto& it : allGrids[X][Y][Z].sphere_vec)				
@@ -398,3 +365,47 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 }
 
 
+int RayTracer::nearest(Primitive* it,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re){
+	int in_out = 0;
+	if (it->getLastRay() != ray.getID()){
+		IntersectResult temp;
+		if (in_out = it->intersect(ray, temp))
+			if (temp.distance < result.distance){
+				result = temp;
+				re = in_out;
+			}													
+	}
+	return in_out;
+}
+
+
+void RayTracer::addPrimiToBox(Primitive* primi, const MyVec3& loBound, const MyVec3& hiBound){
+
+	AABB bigBOX = primi->getAABB();
+	int x1 = (bigBOX.getPos().x - loBound.x) / unit.x;
+	int x2 = (bigBOX.getPos_2().x - loBound.x) / unit.x + 1;
+	x1 = x1 < 0 ? 0 : x1;
+	x2 = x2 > Config::GRIDSIZE ? Config::GRIDSIZE : x2;
+	int y1 = (bigBOX.getPos().y - loBound.y) / unit.y;
+	int y2 = (bigBOX.getPos_2().y - loBound.y) / unit.y + 1;
+	y1 = y1 < 0 ? 0 : y1;
+	y2 = y2 > Config::GRIDSIZE ? Config::GRIDSIZE : y2;
+	int z1 = (bigBOX.getPos().z - loBound.z) / unit.z;
+	int z2 = (bigBOX.getPos_2().z - loBound.z) / unit.z + 1;
+
+	z1 = z1 < 0 ? 0 : z1;
+	z2 = z2 > Config::GRIDSIZE ? Config::GRIDSIZE : z2;
+	
+	cout << x1 << x2 << y1 << y2 << z1 << z2 << endl;
+	for (int x = x1; x < x2; x++)
+		for (int y = y1; y < y2; y++)
+			for (int z = z1; z < z2; z++){
+				MyVec3 l(loBound.x + x * unit.x, loBound.y + y * unit.y, loBound.z + z * unit.z);
+				AABB cell(l, unit);
+				cout << l << endl;
+				if (primi->isIntersectWithBox(cell)){						
+					allGrids[x][y][z].push_back(primi);
+				}
+
+			}	
+}

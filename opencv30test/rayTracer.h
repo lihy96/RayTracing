@@ -4,9 +4,6 @@
 
 #ifdef DEBUG
 
-
-
-
 #include "all.h"
 #endif
 
@@ -37,13 +34,15 @@ public:
 
 	void run(MyMat&, Camera&, MyObj&);//屏， 照相机， 场景中的物体
 	void initGrid(const MyObj& scene);
-	template<typename T>
-	void addPrimiToBox(T& primi, const MyVec3& loBound, const MyVec3& hiBound);
+	//template<typename T>
+	//void addPrimiToBox(T& primi, const MyVec3& loBound, const MyVec3& hiBound);
+	void addPrimiToBox(Primitive* primi, const MyVec3& loBound, const MyVec3& hiBound);
 	const Color rayTraceRecursive(const Ray& ray, const MyObj& scene, int recursiveDepth, double irefIndex);
 	int findNearestNoAABB(const Ray& ray,const MyObj& scene, IntersectResult& result);
 	int findNearest(const Ray& ray,const MyObj& scene, IntersectResult& result);
-	template<typename T>
-	int nearest(T& it,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re);
+	//template<typename T>
+	//int nearest(T& it,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re);
+	int nearest(Primitive* primi,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re);
 
 	AABB wholeSpace;
 	MyVec3 unit;
@@ -51,7 +50,7 @@ public:
 
 };
 const double DEVIANCE = 0.01;
-
+/*
 template<typename T>
 int RayTracer::nearest(T& it,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re){
 	int in_out = 0;
@@ -100,5 +99,5 @@ void RayTracer::addPrimiToBox(T& primi, const MyVec3& loBound, const MyVec3& hiB
 
 			}	
 
-}
+}*/
 #endif

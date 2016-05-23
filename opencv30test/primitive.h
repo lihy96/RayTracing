@@ -16,7 +16,6 @@ public:
 	virtual int isIntersectWithBox(const AABB& a_Box) = 0;
 	virtual int getType() const = 0;
 	virtual AABB getAABB() = 0;
-
 	const int getLastRay() const { return id; }
 	int& setID() { return id; }
 
