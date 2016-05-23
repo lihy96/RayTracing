@@ -21,6 +21,7 @@ public:
 	friend Color operator + ( const Color& , const Color& );
 	friend Color operator * ( const Color& , const Color& );
 	friend Color operator * ( const double& ,const Color& );
+	friend Color operator * ( const Color& ,const double&);
 };
 
 const Color BLACK = Color(0,0,0);

@@ -58,11 +58,11 @@ public:
 
 	void sample(const MyVec3& ray, const MyVec3& L, const MyVec3& normal, const Color& light, Color& re)const
 	{
-		//	l: the opposite vector of incident light
-		//	r: reflected light
-		//	v: the vector towards the viewer(the opposite vector of camera ray)
-		//	h: the angle-bisector of l and v
-		//	n: normal vector
+		//	l: 入射光的反方向
+		//	r: 反射后的光线方向
+		//	v: 向着camera发出的方向，即camera发出ray光线的反方向
+		//	h: 入射光的反方向和视角v的方向（ray的方向）的夹角
+		//	n: 法向量
 
 		//	r = (-l) - 2*dot(-l, n)n
 		//	f(l->v) = diffuseColor + specularColor * dot(r, v)^s / dot(n, l)
@@ -71,8 +71,8 @@ public:
 		double NdotL = std::max(MyVec3::dot(normal,L), 0.0);
 		MyVec3 H = (L - ray).unit();
 		double NdotH = std::max(MyVec3::dot(normal, H), 0.0);
-		re = NdotL * diffuse * color * light + std::pow(NdotH, shininess) * specular * light;       
-	}
+		re = NdotL * diffuse * color * light + std::pow(NdotH, shininess) * specular * light;  
+	}	
 };
 
 class Chess:public Material

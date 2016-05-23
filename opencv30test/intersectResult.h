@@ -1,7 +1,10 @@
 #ifndef INTERSECTRESULT_H
 #define INTERSECTRESULT_H
+
 #include "myVec3.h"
 #include "material.h"
+#include "primitive.h"
+
 class IntersectResult
 {
 public:
@@ -14,6 +17,7 @@ public:
 	MyVec3 intersectPoint, normalVec;
 	double distance;
 	const Material* ma;
+	const Primitive* primi;
 };
 const double INF = 1000000000000.0;
 #endif

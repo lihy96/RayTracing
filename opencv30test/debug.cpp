@@ -1,5 +1,6 @@
 #include "debug.h"
 #include "mymat.h"
+#include "color.h"
 #include <iostream>
 using namespace std;
 ostream &operator<<(ostream &os, const MyVec3 &m) { 
@@ -12,3 +13,15 @@ ostream &operator<<(ostream &os, Ray &m) {
 ostream &operator<<(ostream &os, const MyMat &m) {
 	return os << "mymat:" << endl << m.mat;
 }
+
+ostream &operator<<(ostream &os, Color &m) {
+	return os << "color r g b" << m.r() << " " << m.g() << " " << m.b();
+
+}
+
+ostream &operator<<(ostream &os,const IntersectResult  &m) {
+	return os << "point distance normal" << m.intersectPoint << " " << m.distance << " " << m.normalVec;
+
+}
+
+

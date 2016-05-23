@@ -50,7 +50,7 @@ MyVec3& operator *= ( MyVec3& A , const double& k ) {
 	return A;
 }
 
-MyVec3& operator += ( MyVec3& A , const double& k ) {
+MyVec3& operator /= ( MyVec3& A , const double& k ) {
 	A = A / k;
 	return A;
 }
