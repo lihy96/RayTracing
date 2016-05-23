@@ -16,10 +16,12 @@ public:
 	Sphere(const MyVec3& _center, double _R, const Phong& _ma):center(_center) , R(_R) ,ma(_ma){ init();};
 	~Sphere(){};
 	
-	int intersect(const Ray& ray, IntersectResult& result) const override{	
+	int intersect(const Ray& ray, IntersectResult& result) override{	
 		//	|| o + t*d - c|| = r   《=》 || v + t*d|| = r
 		//	t = - dot(d, v) + - sqrt( dot(d,v)^2 - (||v|| - r^2) ) 取负号为焦点
 		//	 dot(d, v) > 0 ： 光线不向着物体发射 or dot(d,v)^2 - (||v|| - r^2) < 0 ：判别式小于零 =》没有交点
+
+		id = ray.getID();
 		MyVec3 v = ray.getOri() - center;
 		double judge1 = MyVec3::dot(ray.getDir(), v);
 		if(judge1 >  0)
@@ -71,13 +73,13 @@ public:
 		return (dmin <= R_2);
 	}
 
-	int getType() override{
+	int getType() const override{
 		return Config::SPHERE_TYPE;
 	}
 
 	AABB getAABB() override{
 		MyVec3 size(R, R, R);
-		return AABB(center - size, R * 2);
+		return AABB(center - size, 2 * size);
 	}
 	Phong& material() {	return ma;	}
 	const MyVec3& getCenter() const{	return center;	}

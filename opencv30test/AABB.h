@@ -16,6 +16,10 @@ public:
 	const MyVec3& getSize() const {return size;}
 	const MyVec3& getPos_2() const {return pos_2;}
 
+	//static const AABB getAABB(const Sphere&);
+	//static const AABB getAABB(const Plane&);
+	//static const AABB getAABB(const PointLight&);
+
 	//盒子是否包围一个点
 	bool isContainPoint(const MyVec3& p) override{ 
 		MyVec3 v1 = pos, v2 = pos + size;

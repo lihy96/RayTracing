@@ -10,12 +10,17 @@ class IntersectResult;
 class Primitive
 {
 public:
-	Primitive(){};
+	Primitive() : id(0){};
 	~Primitive(){};
-	virtual int intersect(const Ray& ray, IntersectResult& result) const = 0;
+	virtual int intersect(const Ray& ray, IntersectResult& result) = 0;
 	virtual int isIntersectWithBox(const AABB& a_Box) = 0;
-	virtual int getType() = 0;
+	virtual int getType() const = 0;
 	virtual AABB getAABB() = 0;
+
+	const int getLastRay() const { return id; }
+	int& setID() { return id; }
+
+	int id;
 };
 
 

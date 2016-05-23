@@ -8,7 +8,7 @@ class Plane:public Primitive
 public:
 
 	~Plane(){};
-	int intersect(const Ray& ray, IntersectResult& result) const override{
+	int intersect(const Ray& ray, IntersectResult& result) override{
 		double cosA = -MyVec3::dot(normalVec, ray.getDir());	
 		if (cosA > 0){
 			double delta = MyVec3::dot(normalVec, ray.getOri());
@@ -39,12 +39,12 @@ public:
 		else 
 			return 1;		
 	}
-	int getType() override{
+	int getType()  const override{
 		return Config::PLANE_TYPE;
 	}
 
 	AABB getAABB() override {
-		return AABB(MyVec3(-INF, -INF, -INF), MyVec3(2 *INF, 2 * INF, 2 * INF));
+		return AABB(MyVec3(-10000.0, -10000.0, -10000.0), MyVec3(20000.0, 20000.0, 20000.0));
 	}
 
 //	const Chess& material() const{	return ma;	}

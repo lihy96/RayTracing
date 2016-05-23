@@ -34,15 +34,19 @@ public:
 	Light(color),
 	position(position){}
 	
-	const Sphere& get() const{ return position; }
+	Sphere& get() { return position; }
 
-	int intersect(const Ray& ray, IntersectResult& result) const override {
-		return position.intersect(ray, result);
+	int intersect(const Ray& ray, IntersectResult& result) override {
+		int flag =  position.intersect(ray, result);
+		if(flag){
+			result.primi = this;
+		}	
+		return flag;
 	}
 	int isIntersectWithBox(const AABB& a_Box) override {
 		return position.isIntersectWithBox(a_Box);
 	}
-	int getType() override {
+	int getType() const override {
 		return Config::LIGHT_TYPE;
 	}
 	AABB getAABB() override {

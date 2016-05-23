@@ -5,9 +5,12 @@
 class Config
 {
 public:
-	static const int LIGHT_TYPE = 11;
-	static const int SPHERE_TYPE = 12;
-	static const int PLANE_TYPE = 13;
+	static const int LIGHT_TYPE = 111;
+	static const int SPHERE_TYPE = 222;
+	static const int PLANE_TYPE = 333;
+	
+	static const int MISS = 0;
+	static const int GRIDSIZE = 8;
 };
 
 
