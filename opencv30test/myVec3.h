@@ -52,6 +52,7 @@ public:
 		if(fabs(length) > EPS)
 			A /= length;
 		else{
+			cout << "hehe" << endl;
 			exit(99);
 			A = MyVec3(0,0,1);
 		}

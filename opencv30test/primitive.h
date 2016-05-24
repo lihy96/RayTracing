@@ -14,10 +14,14 @@ public:
 	~Primitive(){};
 	virtual int intersect(const Ray& ray, IntersectResult& result) = 0;
 	virtual int isIntersectWithBox(const AABB& a_Box) = 0;
+	virtual Material* material()  = 0;
 	virtual int getType() const = 0;
 	virtual AABB getAABB() = 0;
 	const int getLastRay() const { return id; }
 	int& setID() { return id; }
+	//virtual Color getColor(MyVec3& a_Pos) = 0;
+
+
 
 	int id;
 };

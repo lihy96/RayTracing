@@ -1,9 +1,12 @@
 #ifndef AABB_H
 #define AABB_H
-#include "myVec3.h"
+
 #include <vector>
 #include "ray.h"
 #include "Box.h"
+#include "config.h"
+
+class IntersectResult ;
 
 class AABB : public Box
 {
@@ -21,7 +24,7 @@ public:
 	//static const AABB getAABB(const PointLight&);
 
 	//盒子是否包围一个点
-	bool isContainPoint(const MyVec3& p) override{ 
+	bool isContainPoint(const MyVec3& p) { 
 		MyVec3 v1 = pos, v2 = pos + size;
 		return ( (p.x > (v1.x - EPS)) && (p.x < (v2.x + EPS)) &&
 			     (p.y > (v1.y - EPS)) && (p.y < (v2.y + EPS)) &&
@@ -29,7 +32,7 @@ public:
 	}
 	
 	//盒子是否与另一个盒子相交
-	bool isIntersect(const Box& _m) override{
+	bool isIntersect(const Box& _m) {
 		const AABB &m = *static_cast<const AABB*>(&_m);
 		//const AABB& m = dynamic_cast<const AABB&>(_m);
 		MyVec3 v1 = m.getPos(), v2 = m.getPos_2();
@@ -39,7 +42,8 @@ public:
 				(v4.z > v1.z) && (v3.z < v2.z));   // z-axis overlap
 	}
 
-private:
+	int intersect(const Ray& ray, IntersectResult& result);
+	
 	MyVec3 pos,size,pos_2;
 };
 

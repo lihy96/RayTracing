@@ -22,6 +22,8 @@ public:
 		//	 dot(d, v) > 0 ： 光线不向着物体发射 or dot(d,v)^2 - (||v|| - r^2) < 0 ：判别式小于零 =》没有交点
 
 		id = ray.getID();
+
+
 		MyVec3 v = ray.getOri() - center;
 		double judge1 = MyVec3::dot(ray.getDir(), v);
 		if(judge1 >  0)
@@ -81,8 +83,31 @@ public:
 		MyVec3 size(R, R, R);
 		return AABB(center - size, 2 * size);
 	}
-	Phong& material() {	return ma;	}
+	 Material* material() {	return &ma;	}
 	const MyVec3& getCenter() const{	return center;	}
+	
+	const Color getColorTexture(MyVec3& a_Pos) {
+		Color retval;
+		if (!ma.GetTexture()) {
+			//cout << "no sphere texture" << endl;
+			retval = ma.getColor(); 
+		}
+		else
+		{
+			//cout << "have sphere texture" << endl;
+			MyVec3 vp = ((double)(1 / R)) * (a_Pos - center);
+			double phi = acosf( -MyVec3::dot( vp, YPLUS ) );
+			double u, v = phi * ma.GetVScaleReci() * (1.0f / PI);
+			double theta = (acosf( MyVec3::dot( XPLUS, vp ) / sinf( phi ))) * (2.0f / PI);
+			if (MyVec3::dot( ZPLUS, vp ) <= 0) u = (1.0f - theta) * ma.GetUScaleReci();
+								 else u = theta * ma.GetUScaleReci();
+			retval = ma.GetTexture()->GetTexel( u, v ) * ma.getColor();
+		}
+		return retval;	
+		
+	}
+
+
 private:
 	void init(){ R_2 = R * R; };
 	MyVec3 center;

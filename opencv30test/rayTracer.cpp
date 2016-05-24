@@ -1,6 +1,5 @@
 #include "rayTracer.h"
 
-const int MAX_RECURSIVE_DEEPTH = 5;//最大递归深度
 
 
 void RayTracer::initGrid(const MyObj& scene){
@@ -24,14 +23,20 @@ void RayTracer::initGrid(const MyObj& scene){
 	for (auto& it : scene.plight_vec)
 		addPrimiToBox(it, loBound, hiBound);
 
+	for(auto& it : scene.blight_vec)
+		addPrimiToBox(it, loBound, hiBound);
 
 }
 
+
+#define SUPERSAM
 void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 	
 	initGrid(myobj);
 
 	int rows = m.getRow(), cols = m.getCol();
+
+#ifndef SUPERSAM
 	for(int c = 0;c < cols;c++){
 		double u = 1 - ((double)c) / cols;
 		for(int r = 0;r < rows; r++){
@@ -40,7 +45,49 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 			Vec3d color = rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
 			m.setPixel(r, c, color);
 		}
+		
 	}
+#endif
+
+#ifdef SUPERSAM
+
+	double pixel_width = 1.0 / cols;
+	double pixel_height = 1.0 / rows;
+	double pixel_width_half = 0.5 * pixel_width;
+	double pixel_height_half = 0.5 * pixel_height;
+
+	double sample_width = pixel_width / SUPER_SAMPLES;
+	double sample_height = pixel_height / SUPER_SAMPLES;
+
+	double SUPER_SAMPLES_2_DOWN = (1.0) / ( (SUPER_SAMPLES  + 1) * (SUPER_SAMPLES + 1) );
+
+	for(int c = 0;c < cols;c++){
+		double u = 1 - ((double)c) / cols;
+		//printf("%.2lf \%\n",(1-u)*100);
+		for(int r = 0;r < rows; r++){
+			double v = 1 - ((double)r) / rows; //屏的左下角是（0,0），右上角是（1,1）
+
+			double sampleStartU = u - pixel_width_half;
+			double sampleStartV = v - pixel_height_half;
+
+
+			Vec3d color(0,0,0);
+			for(int x = 0; x <= SUPER_SAMPLES; x++){
+				for(int y = 0;y <= SUPER_SAMPLES; y++){
+					Ray ray = camera.emit(sampleStartU + x * sample_width, sampleStartV + y * sample_height);
+					color += SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
+				}
+			}
+			m.setPixel(r, c, color);
+		}
+
+		//m.show("f");
+		//waitKey(5);
+	}
+#endif
+
+
+
 }
 
 //找到最近的物体的交点
@@ -105,7 +152,7 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 	if ((X < 0) || (X >= gridSize)
 		|| (Y < 0) || (Y >= gridSize)
 		|| (Z < 0) || (Z >= gridSize))
-		return Config::MISS;
+		return MISS;
 		
 	//	step: the increasing delta
 	//	out: the stop boundary		
@@ -173,29 +220,26 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 	else
 		tmax.z = INF;
 
-	//cout << tmax << tdelta << endl;exit(9);
-
-
 	//	find the first intersection
-	int re = Config::MISS;
+	int re = MISS;
 	while (true){
-
-		
 		for (auto& it : allGrids[X][Y][Z].sphere_vec){	
-
 			if (nearest(it, ray, scene, result, re)){
 				goto closer;
 			}
 		}
 		for (auto& it : allGrids[X][Y][Z].plane_vec){
+			if (nearest(it, ray, scene, result, re)){
+				goto closer;
+			}
+		}
+		for (auto& it : allGrids[X][Y][Z].plight_vec){
 
 			if (nearest(it, ray, scene, result, re)){
 				goto closer;
 			}
 		}
-
-		for (auto& it : allGrids[X][Y][Z].plight_vec){
-
+		for (auto& it : allGrids[X][Y][Z].blight_vec){
 			if (nearest(it, ray, scene, result, re)){
 				goto closer;
 			}
@@ -205,13 +249,13 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 			if (tmax.x < tmax.z){
 				X += stepX;
 				if (X == outX)
-					return Config::MISS;
+					return MISS;
 				tmax.x += tdelta.x;
 			}
 			else{
 				Z += stepZ;
 				if (Z == outZ)
-					return Config::MISS;
+					return MISS;
 				tmax.z += tdelta.z;
 			}
 		}
@@ -219,13 +263,13 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 			if (tmax.y < tmax.z){
 				Y += stepY;
 				if (Y == outY)
-					return Config::MISS;
+					return MISS;
 				tmax.y += tdelta.y;
 			}
 			else{
 				Z += stepZ;
 				if (Z == outZ)
-					return Config::MISS;
+					return MISS;
 				tmax.z += tdelta.z;
 			}
 		}
@@ -238,6 +282,8 @@ closer:
 		for (auto& it : allGrids[X][Y][Z].plane_vec)
 			nearest(it, ray, scene, result, re);
 		for (auto& it : allGrids[X][Y][Z].plight_vec)
+			nearest(it, ray, scene, result, re);
+		for (auto& it : allGrids[X][Y][Z].blight_vec)
 			nearest(it, ray, scene, result, re);
 
 		if (tmax.x < tmax.y){
@@ -287,17 +333,31 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 	IntersectResult	result;
 	result.distance = INF;
 	double in_out = findNearest(ray, scene, result);
-	//cout << in_out << endl;
+	
+
+	Color ColorTexture;
+
 	if(in_out == 0)	//光线未与任何物体相交
 		return BLACK;
 	else{	//光线与某一个物体相交
-		if(result.primi->getType() == Config::LIGHT_TYPE){
+		int type = result.primi->getType();
+		if(type == Config::LIGHT_POINT_TYPE){
 			const PointLight* m = static_cast<const PointLight*>(result.primi);
 			return m->getColor();
 			//return dynamic_cast<PointLight*>(const_cast<Primitive*>(result.primi))->getColor();
+		}else if(type == Config::LIGHT_BOX_LIGHT){
+			const BoxLight* m = static_cast<const BoxLight*>(result.primi);
+			return m->getColor();
+		}else if(type == Config::SPHERE_TYPE){
+			Sphere* m = static_cast<Sphere*>(result.primi);
+			ColorTexture = m->getColorTexture( result.intersectPoint );
+		}else if(type == Config::PLANE_TYPE){
+			Plane* m = static_cast<Plane*>(result.primi);
+			ColorTexture = m->getColorTexture( result.intersectPoint );
 		}
-	}
 
+
+	}
 
 	
 
@@ -308,8 +368,12 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 		MyVec3::normalize(L);	
 	
 		//判断光源是否能照到表面交点
-		Ray shadowRay(result.intersectPoint, L); //从表面向光源发射一条光线
-		int shadowFlag = 0;
+		Ray shadowRay(result.intersectPoint + DEVIANCE * L, L); //从表面向光源发射一条光线
+		IntersectResult temp;
+		findNearest(shadowRay, scene, temp);
+		if(temp.primi != it)
+			continue;
+		/*int shadowFlag = 0;
 		for (auto& it : scene.sphere_vec){
 			IntersectResult temp;
 			if (it->intersect(shadowRay, temp) && temp.distance < Ldist){
@@ -328,21 +392,69 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 			}
 		}
 		if (shadowFlag)
-			continue;
+			continue;*/
 
 		//光源可以照到表面交点处，利用phong模型计算
 		//注意这里其实传入表面相交点并没有用
-		re = re + result.ma->sample(ray.getDir(), L, result.normalVec, result.intersectPoint, it->getColor());	
+		re = re + result.ma->sample(ray.getDir(), L, result.normalVec, result.intersectPoint, it->getColor(),ColorTexture);	
+
+
+	}
+
+
+	for (auto& it : scene.blight_vec){
+		MyVec3 L;
+		double shadow = calSoftShade(it, result.intersectPoint, L, scene);
+		if (shadow > 0)
+			re = re + shadow * result.primi->material()->sample(ray.getDir(), L, result.normalVec, result.intersectPoint, it->getColor());			
 	}
 		
 	// 计算反射的情况
 	double reflectiveness = result.ma->getReflectiveness();
-	if (recursiveDepth > 0 && reflectiveness > 0) {
+	if (recursiveDepth > 0 && reflectiveness > 0){
+		double diffReflectOffset = result.primi->material()->difflection;
+		//	only perform diffuse reflection for primary rays; otherwise it's just too slow.
+		if ((diffReflectOffset > 0) && (recursiveDepth == MAX_RECURSIVE_DEEPTH)){
+			MyVec3 dire = ray.getDir() - 2.0 * MyVec3::dot(ray.getDir(), result.normalVec) * result.normalVec;
+			//	direXZ and dire are vertical crossing in xz plane
+			//MyVec3 direXZ(dire.z, dire.y, -dire.x);
+			MyVec3 direXZ(dire.z, 0, -dire.x);
+			MyVec3 direY = MyVec3::cross(dire, direXZ);
+			reflectiveness *= SAMPLES_DOWN;
+			for (int i = 0; i < SAMPLES; i++){
+				double xzoffs, yoffs;
+				do
+				{
+					xzoffs = Config::myRand_11();
+					yoffs = Config::myRand_11();
+				}
+				while ((xzoffs * xzoffs + yoffs * yoffs) > 1);
+				MyVec3 realDire = dire + xzoffs * diffReflectOffset * direXZ + yoffs * diffReflectOffset * direY;
+				MyVec3::normalize(realDire);
+				Ray reflect(result.intersectPoint + DEVIANCE * realDire, realDire);
+				Color got = rayTraceRecursive(reflect, scene, recursiveDepth - 1, irefIndex);
+				//re = re + reflectiveness * got * result.primi->material()->getColor();
+				re = re + reflectiveness * got * ColorTexture;
+			}
+	}
+	else{
+		MyVec3 dire = ray.getDir() - 2 * MyVec3::dot(ray.getDir(), result.normalVec) * result.normalVec;
+		//	move origin towards direction a little distance
+		//	in order to figure out right intersection
+		Ray reflect(result.intersectPoint + DEVIANCE * dire, dire);
+		Color got = rayTraceRecursive(reflect, scene, recursiveDepth - 1, irefIndex);
+		//re = re + reflectiveness * got * result.primi->material()->getColor();
+		re = re + reflectiveness * got * ColorTexture;
+	}
+}
+
+
+	/*if (recursiveDepth > 0 && reflectiveness > 0) {
 		MyVec3 dire = ray.getDir() - 2 * MyVec3::dot(ray.getDir(), result.normalVec) * result.normalVec;
 		Ray reflect(result.intersectPoint + DEVIANCE * dire, dire);
 		Color got = rayTraceRecursive(reflect, scene, recursiveDepth - 1, irefIndex);
 		re = re + reflectiveness * got * result.ma->getColor();
-	}	
+	}	*/
 
 	// 计算折射的情况
 	double refraction = result.ma->getRefraction();
@@ -396,16 +508,49 @@ void RayTracer::addPrimiToBox(Primitive* primi, const MyVec3& loBound, const MyV
 	z1 = z1 < 0 ? 0 : z1;
 	z2 = z2 > Config::GRIDSIZE ? Config::GRIDSIZE : z2;
 	
-	cout << x1 << x2 << y1 << y2 << z1 << z2 << endl;
+	//cout << x1 << x2 << y1 << y2 << z1 << z2 << endl;
 	for (int x = x1; x < x2; x++)
 		for (int y = y1; y < y2; y++)
 			for (int z = z1; z < z2; z++){
 				MyVec3 l(loBound.x + x * unit.x, loBound.y + y * unit.y, loBound.z + z * unit.z);
 				AABB cell(l, unit);
-				cout << l << endl;
+				//cout << l << endl;
 				if (primi->isIntersectWithBox(cell)){						
 					allGrids[x][y][z].push_back(primi);
 				}
 
 			}	
+}
+
+
+
+double RayTracer::calSoftShade(BoxLight* light, MyVec3 ip, MyVec3& L, const MyObj& scene){
+	double re = 0;
+	L = light->get().getPos() + 0.5 * light->get().getSize() - ip;
+	MyVec3::normalize(L);
+	double deltaX = (light->get()).getSize().x * SOFT_SHA_GRID_BIAN_DOWN	;
+	double deltaY = (light->get()).getSize().y * SOFT_SHA_GRID_BIAN_DOWN;
+	for (int i = 0; i < SAMPLES; i++){
+		MyVec3 lightPoint(light->getSampleGridX(i) + Config::myRand01() * deltaX,
+			light->get().getPos().y, light->getSampleGridY(i) + Config::myRand01() * deltaY);
+		MyVec3 dire = lightPoint - ip;
+		MyVec3::normalize(dire);
+		IntersectResult temp;
+		if (findNearest(Ray(ip + DEVIANCE * dire, dire), scene, temp) && (temp.primi == light) )
+			re += SAMPLES_DOWN;
+	}
+	return re;
+}
+
+void RayTracer::addTexture(MyObj& scene){
+	for (auto& it : scene.sphere_vec){
+		it->material()->SetTexture( new Texture( "textures/marble.tga" ) );
+		it->material()->SetUVScale( 0.8, 0.8 );
+	}
+
+	for (auto& it : scene.plane_vec){
+		it->material()->SetTexture( new Texture( "textures/wood.tga" ) );
+		it->material()->SetUVScale(0.05, 0.05 );
+	}
+		
 }

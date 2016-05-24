@@ -16,19 +16,26 @@ public:
 	void push_back(Plane* ele){	plane_vec.push_back(ele);	}
 	void push_back(PointLight* ele){	plight_vec.push_back(ele);	}
 	void push_back(Primitive* ele) {
-		if(ele->getType() == Config ::LIGHT_TYPE)
+		if(ele->getType() == Config ::LIGHT_POINT_TYPE)
 			plight_vec.push_back(static_cast<PointLight*>(ele));
 		else if(ele->getType() == Config::PLANE_TYPE)
 			plane_vec.push_back(static_cast<Plane*>(ele));
 		else if(ele->getType() == Config::SPHERE_TYPE)
 			sphere_vec.push_back(static_cast<Sphere*>(ele));
-		else
+		else if(ele->getType() == Config::LIGHT_BOX_LIGHT)
+			blight_vec.push_back(static_cast<BoxLight*>(ele));
+		else{
+			cout << "ahadf " << endl;
+			cout.flush();
 			exit(99);
+		}
+			
 	}
 
 	std::vector<Sphere*> sphere_vec;
 	std::vector<Plane*> plane_vec;
 	std::vector<PointLight*> plight_vec;
+	std::vector<BoxLight*> blight_vec;
 };
 
 #endif

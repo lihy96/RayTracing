@@ -47,8 +47,29 @@ public:
 		return AABB(MyVec3(-10000.0, -10000.0, -10000.0), MyVec3(20000.0, 20000.0, 20000.0));
 	}
 
+	Color getColorTexture(MyVec3& a_Pos) {
+		Color retval;
+		if (ma->GetTexture())
+		{
+			//cout << "have plane texture " << endl;
+			Texture* t = ma->GetTexture();
+
+			MyVec3 m_UAxis = MyVec3( normalVec.y, normalVec.z, -normalVec.x );
+			MyVec3 m_VAxis = MyVec3::cross(m_UAxis, normalVec );
+
+			double u = MyVec3::dot( a_Pos, m_UAxis ) * ma->GetUScale();
+			double v = MyVec3::dot( a_Pos, m_VAxis ) * ma->GetVScale();
+			retval = t->GetTexel( u, v ) * ma->getColor();
+		}
+		else{
+			//cout << "no plane texture" << endl;
+			retval = ma->getColor();
+		}
+		return retval;
+	}
+
 //	const Chess& material() const{	return ma;	}
-	const Material* material() const{	return ma;	}
+	Material* material() {	return ma;	}
 
 	//	constructor
 	Plane():
