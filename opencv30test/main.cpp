@@ -107,7 +107,7 @@ int main(int argc, char** argv){
 	scene.plight_vec.push_back( new PointLight(MyVec3(4, 4, -4), 0.1, Color(0.6, 0.6, 0.7)));
 	scene.plight_vec.push_back( new PointLight(MyVec3(2, 5, -2), 0.1, Color(0.5, 0.8, 0.8)));
 
-	scene.blight_vec.push_back(new BoxLight(AABB(MyVec3(-1, 5, 4), MyVec3(2, 0.1, 2)), Color(1, 1, 1)));
+	//scene.blight_vec.push_back(new BoxLight(AABB(MyVec3(-1, 5, 4), MyVec3(2, 0.1, 2)), Color(1, 1, 1)));
 #endif
 
 	//r6-------------------------------------------------------------------------

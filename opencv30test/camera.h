@@ -7,9 +7,10 @@
 class Camera
 {
 public:
-	Camera(const MyVec3& _eye, const MyVec3& _front,const MyVec3& _up, double _viewAngle):
-	eye(_eye), front(MyVec3(_front).unit()), up(MyVec3(_up).unit()), viewAngle(_viewAngle){
-		right = MyVec3::cross(front,up);
+	Camera(const MyVec3& _eye, const MyVec3& _front,const MyVec3& _realUp, double _viewAngle):
+	eye(_eye), front(MyVec3(_front).unit()), realUp(MyVec3(_realUp).unit()), viewAngle(_viewAngle){
+		right = MyVec3::cross(front,realUp);
+		up = MyVec3::cross(right, front);
 		viewAngleScale = std::tan(viewAngle * 0.5 * PI / 180) * 2;
 	};
 	~Camera(){};
@@ -18,7 +19,7 @@ public:
 	void emit(double sx, double sy, Ray& ray); // sx,sy in [0,1]
 	Ray emit(MyVec3&);
 
-	MyVec3 eye, front, up; // 眼睛位置,前方单位向量，上方单位向量
+	MyVec3 eye, front, up, realUp; // 眼睛位置,前方单位向量，上方单位向量
 	MyVec3 right;//右方向量
 	double viewAngle, viewAngleScale; // 视野的角度fov，视野对于屏上的宽度
 };
