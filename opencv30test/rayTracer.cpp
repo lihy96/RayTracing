@@ -30,6 +30,8 @@ void RayTracer::initGrid(const MyObj& scene){
 
 
 #define SUPERSAM
+#define jingshen
+
 void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 	
 	initGrid(myobj);
@@ -41,10 +43,25 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 		double u = 1 - ((double)c) / cols;
 		for(int r = 0;r < rows; r++){
 			double v = 1 - ((double)r) / rows; //屏的左下角是（0,0），右上角是（1,1）
-			Ray ray = camera.emit(u,v);// 向转化过来的点发出一条光
-			Vec3d color = rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
+
+			Vec3d color(0,0,0);
+
+			//for(int i = 0;i < DEEP_OF_FIELD_NUM;i++){	
+			//	double disturbX = rand() * DISTURB / RAND_MAX;
+			//	double disturbY = rand() * DISTURB / RAND_MAX;
+			//	Ray ray = camera.emit(u + disturbX, v + disturbY);
+			//	color += DEEP_OF_FIELD_NUM_DOWN *  rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
+			//}
+			//Ray ray = camera.emit(u,v);// 向转化过来的点发出一条光
+			MyVec3 vec(1- 2 * u,  2 * v - 1, -1.5);
+			Ray ray = camera.emit(vec);
+			//cout << ray << endl << camera.emit(u,v)<< endl << endl;
+			color = rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
 			m.setPixel(r, c, color);
 		}
+
+		m.show("f");
+		waitKey(5);
 		
 	}
 #endif
@@ -58,8 +75,10 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 
 	double sample_width = pixel_width / SUPER_SAMPLES;
 	double sample_height = pixel_height / SUPER_SAMPLES;
+	double sample_width_half = 0.5 * sample_width;
+	double sample_height_half = 0.5 * sample_height;
 
-	double SUPER_SAMPLES_2_DOWN = (1.0) / ( (SUPER_SAMPLES  + 1) * (SUPER_SAMPLES + 1) );
+	double SUPER_SAMPLES_2_DOWN = (1.0) / ( SUPER_SAMPLES * SUPER_SAMPLES );
 
 	for(int c = 0;c < cols;c++){
 		double u = 1 - ((double)c) / cols;
@@ -67,22 +86,47 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 		for(int r = 0;r < rows; r++){
 			double v = 1 - ((double)r) / rows; //屏的左下角是（0,0），右上角是（1,1）
 
-			double sampleStartU = u - pixel_width_half;
-			double sampleStartV = v - pixel_height_half;
+			double sampleStartU = u - pixel_width_half + sample_width_half;
+			double sampleStartV = v - pixel_height_half + sample_height_half;
 
 
 			Vec3d color(0,0,0);
-			for(int x = 0; x <= SUPER_SAMPLES; x++){
-				for(int y = 0;y <= SUPER_SAMPLES; y++){
+			for(int x = 0; x < SUPER_SAMPLES; x++){
+				for(int y = 0;y < SUPER_SAMPLES; y++){
+
+#ifdef jingshen
+					double u_bia = sampleStartU + x * sample_width;
+					double v_bia = sampleStartV + y * sample_height;
+					Ray rayToFocus = camera.emit(u_bia , v_bia);
+					MyVec3 focus_p = rayToFocus.getOri() + FOCUS_DIS * rayToFocus.getDir();
+					
+					for(int i = 0;i < DEEP_OF_FIELD_NUM;i++){
+						
+						double disturbX = rand() * APERTURE_R_PIXEL / RAND_MAX;
+						double disturbY = rand() * APERTURE_R_PIXEL / RAND_MAX;
+						camera.eye.x += disturbX;
+						camera.eye.y += disturbY;
+						
+						Ray ray = camera.emit(focus_p);
+
+		
+						camera.eye.x -= disturbX;
+						camera.eye.y -= disturbY;
+						color += DEEP_OF_FIELD_NUM_DOWN * SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
+					}
+#endif
+
+#ifndef jingshen
 					Ray ray = camera.emit(sampleStartU + x * sample_width, sampleStartV + y * sample_height);
 					color += SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
+#endif
 				}
 			}
 			m.setPixel(r, c, color);
 		}
 
-		//m.show("f");
-		//waitKey(5);
+		m.show("super");
+		waitKey(5);
 	}
 #endif
 
@@ -554,3 +598,7 @@ void RayTracer::addTexture(MyObj& scene){
 	}
 		
 }
+
+
+
+

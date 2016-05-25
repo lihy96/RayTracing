@@ -16,6 +16,7 @@ public:
 
 	Ray emit(double sx, double sy);
 	void emit(double sx, double sy, Ray& ray); // sx,sy in [0,1]
+	Ray emit(MyVec3&);
 
 	MyVec3 eye, front, up; // 眼睛位置,前方单位向量，上方单位向量
 	MyVec3 right;//右方向量

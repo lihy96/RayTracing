@@ -16,6 +16,21 @@ Ray Camera::emit(double sx, double sy){
 	return ray;
 }
 
+Ray Camera::emit(MyVec3& p){
+	//MyVec3 dir = (p - eye).unit();
+	//double cosA = MyVec3::dot(dir, MyVec3(0, 0, 1));
+	//double distance = 1.0 / cosA;
+	//MyVec3 pPing = eye + distance * dir;	//屏上一点的坐标
+	//Ray ray;
+	//emit((pPing.x)  , (pPing.y) );
+	Ray ray;
+	ray.setDir((p - eye).unit());
+	ray.setOri(eye);
+	return ray;
+
+}
+
+
 
 
 

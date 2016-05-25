@@ -40,14 +40,20 @@ const int HIT = 1;
 const MyVec3 XPLUS = MyVec3(1, 0, 0);
 const MyVec3 YPLUS = MyVec3(0, 1, 0);
 const MyVec3 ZPLUS = MyVec3(0, 0, 1);
+const MyVec3 XYPLUS = MyVec3(1, 1, 0);
 
 
 //超采样
-const int SUPER_SAMPLES = 3; //(n+1)^2
+const int SUPER_SAMPLES = 1; //(n)^2
 const int SCREEN_WIDTH = 600;
 const int SCREEN_HEIGHT = 600;
 
-
+//景深
+const int APERTURE_R = 55;
+const double FOCUS_DIS = 5.8;
+const double APERTURE_R_PIXEL = ((double)APERTURE_R) / SCREEN_HEIGHT;
+const int DEEP_OF_FIELD_NUM = 28; //景深采样次数
+const double DEEP_OF_FIELD_NUM_DOWN = 1.0 / DEEP_OF_FIELD_NUM;
 
 
 

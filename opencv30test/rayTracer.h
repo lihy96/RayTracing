@@ -42,13 +42,20 @@ public:
 	int nearest(Primitive* primi,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re);
 
 	double calSoftShade(BoxLight* light, MyVec3 ip, MyVec3& dir, const MyObj& scene);
+	
+	//void setCamera(const Camera& _cam){ camera = _cam; }
+	//void setScene(const MyObj& _myobj) { scene = _myobj; }
 
 	//Œ∆¿ÌÃ˘Õº
 	void addTexture(MyObj& scene);
 
+	//æ∞…Ó
+	void castRayWithDeepOfFied(Camera&, MyObj&, Ray&){};
+
 	AABB wholeSpace;
 	MyVec3 unit;
 	MyObj allGrids[Config::GRIDSIZE+1][Config::GRIDSIZE+1][Config::GRIDSIZE+1];
+
 
 };
 
