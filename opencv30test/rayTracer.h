@@ -17,7 +17,9 @@
 #include "primitive.h"
 #include "config.h"
 #include "AABB.h"
-
+#include "config.h"
+#include "kdTree.h"
+#include <fstream>
 #include <iostream>
 #include <vector>
 #include <opencv2/opencv.hpp>
@@ -36,12 +38,12 @@ public:
 	void initGrid(const MyObj& scene);
 
 	void addPrimiToBox(Primitive* primi, const MyVec3& loBound, const MyVec3& hiBound);
-	const Color rayTraceRecursive(const Ray& ray, const MyObj& scene, int recursiveDepth, double irefIndex);
+	const Color rayTraceRecursive(const Ray& ray, const MyObj& scene, int recursiveDepth, double irefIndex,double sampleTime,double sampleDown);
 	int findNearestNoAABB(const Ray& ray,const MyObj& scene, IntersectResult& result);
 	int findNearest(const Ray& ray,const MyObj& scene, IntersectResult& result);
 	int nearest(Primitive* primi,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re);
 
-	double calSoftShade(BoxLight* light, MyVec3 ip, MyVec3& dir, const MyObj& scene);
+	double calSoftShade(BoxLight* light, MyVec3 ip, MyVec3& dir, const MyObj& scene, double sampleTime, double sampleDown);
 	
 	//void setCamera(const Camera& _cam){ camera = _cam; }
 	//void setScene(const MyObj& _myobj) { scene = _myobj; }
@@ -52,11 +54,15 @@ public:
 	//景深
 	void castRayWithDeepOfFied(Camera&, MyObj&, Ray&){};
 
+	//文本读入
+	void readScene(char* file, MyObj& scene);
+	void readObj(char* file, MyObj& scene);
+
 	AABB wholeSpace;
 	MyVec3 unit;
 	MyObj allGrids[Config::GRIDSIZE+1][Config::GRIDSIZE+1][Config::GRIDSIZE+1];
 
-
+	KdTreeNode* root;
 };
 
 /*

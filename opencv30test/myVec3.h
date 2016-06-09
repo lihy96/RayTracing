@@ -39,6 +39,18 @@ public:
 	MyVec3 unit();
 	bool isZeroVector();
 
+
+	double operator[](int i){
+		if(i == 0)
+			return x;
+		else if (i == 1)
+			return y;
+		else if (i == 2)
+			return z;
+		else 
+			exit(98);
+	}
+
 	static const double dot(const MyVec3& A, const MyVec3& B){
 		return A.x * B.x + A.y * B.y + A.z * B.z;
 	}
@@ -49,10 +61,11 @@ public:
 
 	static const MyVec3& normalize(MyVec3& A){
 		double length = A.module();
-		if(fabs(length) > EPS)
+		if(fabs(length) > EPS )
 			A /= length;
 		else{
 			cout << "hehe" << endl;
+			cout << A.x << " " << A.y << " " << A.z << endl;
 			exit(99);
 			A = MyVec3(0,0,1);
 		}

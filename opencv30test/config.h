@@ -1,9 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-
-
-
 class Config
 {
 public:
@@ -12,11 +9,13 @@ public:
 	static const int LIGHT_BOX_LIGHT = 444;
 	static const int SPHERE_TYPE = 222;
 	static const int PLANE_TYPE = 333;
+	static const int TRI_TYPE = 666;
 	
 	//包围盒大小
-	static const int GRIDSIZE = 8;
+	static const int GRIDSIZE = 200;
 	static double myRand01(){ return (double)rand() / RAND_MAX; } //产生0-1之间的随机数
 	static double myRand_11(){ double maxHalf = RAND_MAX / 2; return ( maxHalf - rand() ) / maxHalf; } //产生-1 1之间的随机数
+	static double myRandhalf(){ return myRand01() * 0.5; } //产生0 0.5之间的随机数
 };
 const double DEVIANCE = 1e-6;//偏移量
 const int MAX_RECURSIVE_DEEPTH = 4;	//最大递归深度
@@ -29,8 +28,6 @@ const int SOFT_SHA_GRID_MAX = SOFT_SHA_GRID_SIZE - 1;	//软阴影的格子的最大编号0-
 
 //采样
 const int SAMPLES = 128;
-
-
 const double SAMPLES_DOWN = 1.0 / SAMPLES;
 
 //求交
@@ -52,10 +49,19 @@ const int SCREEN_HEIGHT = 600;
 const int APERTURE_R = 55;
 const double FOCUS_DIS = 5.8;
 const double APERTURE_R_PIXEL = ((double)APERTURE_R) / SCREEN_HEIGHT;
-const int DEEP_OF_FIELD_NUM = 28; //景深采样次数
+const int DEEP_OF_FIELD_NUM = 1; //景深采样次数
 const double DEEP_OF_FIELD_NUM_DOWN = 1.0 / DEEP_OF_FIELD_NUM;
 
+//range
+const double WORLD_RANGE = 10000.0;
+const MyVec3 BIG = MyVec3(WORLD_RANGE,WORLD_RANGE,WORLD_RANGE);
+const MyVec3 SMALL = MyVec3(-WORLD_RANGE,-WORLD_RANGE,-WORLD_RANGE);
 
+//kdtree
+const int KDTREE_MIN_NODE = 20;
+
+//读取obj文件的时候需要确定有多少个点
+const int MAX_VERTEX_NUM = 500000;
 
 
 

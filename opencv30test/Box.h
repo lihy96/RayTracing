@@ -12,6 +12,7 @@ public:
 	virtual bool isContainPoint(const MyVec3& p) = 0;
 	virtual bool isIntersect(const Box& m) = 0;
 	void tm(IntersectResult& re);
+	int id;
 };
 
 #endif

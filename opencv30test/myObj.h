@@ -5,6 +5,7 @@
 #include "sphere.h"
 #include "plane.h"
 #include "light.h"
+#include "triangle.h"
 
 class MyObj
 {
@@ -12,9 +13,11 @@ public:
 	MyObj(){};
 	~MyObj(){};
 
-	void push_back(Sphere* ele){	sphere_vec.push_back(ele);	}
-	void push_back(Plane* ele){	plane_vec.push_back(ele);	}
-	void push_back(PointLight* ele){	plight_vec.push_back(ele);	}
+	//void push_back(Sphere* ele){	sphere_vec.push_back(ele);	}
+	//void push_back(Plane* ele){	plane_vec.push_back(ele);	}
+	//void push_back(PointLight* ele){	plight_vec.push_back(ele);	}
+	//void push_back(Triangle* ele){	tri_vec.push_back(ele);	}
+
 	void push_back(Primitive* ele) {
 		if(ele->getType() == Config ::LIGHT_POINT_TYPE)
 			plight_vec.push_back(static_cast<PointLight*>(ele));
@@ -24,6 +27,8 @@ public:
 			sphere_vec.push_back(static_cast<Sphere*>(ele));
 		else if(ele->getType() == Config::LIGHT_BOX_LIGHT)
 			blight_vec.push_back(static_cast<BoxLight*>(ele));
+		else if(ele->getType() == Config::TRI_TYPE)
+			tri_vec.push_back(static_cast<Triangle*>(ele));
 		else{
 			cout << "ahadf " << endl;
 			cout.flush();
@@ -36,6 +41,7 @@ public:
 	std::vector<Plane*> plane_vec;
 	std::vector<PointLight*> plight_vec;
 	std::vector<BoxLight*> blight_vec;
+	std::vector<Triangle*> tri_vec;
 };
 
 #endif

@@ -2,7 +2,7 @@
 #include "intersectResult.h"
 int AABB::intersect(const Ray& ray, IntersectResult& result){
 
-	//id = ray.getID();
+	id = ray.getID();
 	
 	double dist[6];
 	MyVec3 ip[6], d = ray.getDir(), o = ray.getOri();

@@ -11,9 +11,9 @@
 class Sphere:public Primitive
 {
 public:
-	Sphere() : center(MyVec3(0,0,0)) , R(0) ,ma(WHITE, 0, 0, 0, 0){ init(); };
-	Sphere(const MyVec3& _center, double _R) : center(_center) , R(_R) ,ma(WHITE, 0, 0, 0, 0){ init(); };
-	Sphere(const MyVec3& _center, double _R, const Phong& _ma):center(_center) , R(_R) ,ma(_ma){ init();};
+	Sphere() : center(MyVec3(0,0,0)) , R(0) ,ma(0){ init(); };
+	Sphere(const MyVec3& _center, double _R) : center(_center) , R(_R) ,ma(0){ init(); };
+	Sphere(const MyVec3& _center, double _R, Phong* _ma):center(_center) , R(_R) ,ma(_ma){ init();};
 	~Sphere(){};
 	
 	int intersect(const Ray& ray, IntersectResult& result) override{	
@@ -40,14 +40,14 @@ public:
 					result.intersectPoint = ray.getOri() + x2 * ray.getDir();
 					result.distance = x2;
 					result.normalVec = (result.intersectPoint - center).unit();
-					result.ma = &ma;
+					result.ma = ma;
 					result.primi = this;
 					return 1;
 				}else{	
 					result.intersectPoint = ray.getOri() + x1 * ray.getDir();
 					result.distance = x1;
 					result.normalVec = (result.intersectPoint - center).unit();
-					result.ma = &ma;
+					result.ma = ma;
 					result.primi = this;
 					return -1;
 				}
@@ -83,25 +83,25 @@ public:
 		MyVec3 size(R, R, R);
 		return AABB(center - size, 2 * size);
 	}
-	 Material* material() {	return &ma;	}
+	 Material* material() {	return ma;	}
 	const MyVec3& getCenter() const{	return center;	}
 	
 	const Color getColorTexture(MyVec3& a_Pos) {
 		Color retval;
-		if (!ma.GetTexture()) {
+		if (!ma->GetTexture()) {
 			//cout << "no sphere texture" << endl;
-			retval = ma.getColor(); 
+			retval = ma->getColor(); 
 		}
 		else
 		{
 			//cout << "have sphere texture" << endl;
 			MyVec3 vp = ((double)(1 / R)) * (a_Pos - center);
 			double phi = acosf( -MyVec3::dot( vp, YPLUS ) );
-			double u, v = phi * ma.GetVScaleReci() * (1.0f / PI);
+			double u, v = phi * ma->GetVScaleReci() * (1.0f / PI);
 			double theta = (acosf( MyVec3::dot( XPLUS, vp ) / sinf( phi ))) * (2.0f / PI);
-			if (MyVec3::dot( ZPLUS, vp ) <= 0) u = (1.0f - theta) * ma.GetUScaleReci();
-								 else u = theta * ma.GetUScaleReci();
-			retval = ma.GetTexture()->GetTexel( u, v ) * ma.getColor();
+			if (MyVec3::dot( ZPLUS, vp ) <= 0) u = (1.0f - theta) * ma->GetUScaleReci();
+								 else u = theta * ma->GetUScaleReci();
+			retval = ma->GetTexture()->GetTexel( u, v ) * ma->getColor();
 		}
 		return retval;	
 		
@@ -112,7 +112,7 @@ private:
 	void init(){ R_2 = R * R; };
 	MyVec3 center;
 	double R,R_2;
-	Phong ma;
+	Phong* ma;
 };
 
 #endif

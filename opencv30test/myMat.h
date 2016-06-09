@@ -18,6 +18,13 @@ public:
 	void show(const char* name){ cv::imshow(name,mat);}
 	void setPixel(int _row, int _col,const cv::Vec3d& color){ mat.at<cv::Vec3d>(_row, _col) = color; }
 	void setPixel(int _row, int _col,const Color& color ){ mat.at<cv::Vec3d>(_row, _col) = color.getColor(); }
+	void savePicture(const char* filename){
+		cv::Mat a;
+		mat.convertTo(a, CV_8UC3, 255);
+		cout << imwrite(filename, a);	
+		
+	}
+
 
 #ifdef MYMATDEBUG
 	friend ostream &operator<<(ostream &os, const MyMat &m) ;

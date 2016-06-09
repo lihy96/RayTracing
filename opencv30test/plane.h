@@ -13,12 +13,15 @@ public:
 		if (cosA > 0){
 			double delta = MyVec3::dot(normalVec, ray.getOri());
 			double b = od + delta;	// 照相机到平面的距离
-			result.distance = b / cosA; 
-			result.intersectPoint = ray.getOri() + result.distance * ray.getDir();
-			result.normalVec = normalVec;
-			result.ma = ma;
-			result.primi = this;
-			return 1;
+			double dist = b / cosA;
+			if(dist < result.distance){
+				result.distance = dist; 
+				result.intersectPoint = ray.getOri() + result.distance * ray.getDir();
+				result.normalVec = normalVec;
+				result.ma = ma;
+				result.primi = this;
+				return 1;
+			}
 		}
 		return 0;
 	}
@@ -33,11 +36,12 @@ public:
 				side1++; 
 			else 
 				side2++;
+			if(side1 && side2)
+				return 1;
 		}
-		if ((side1 == 0) || (side2 == 0)) 
-			return 0;
-		else 
-			return 1;		
+	
+		return 0;
+		
 	}
 	int getType()  const override{
 		return Config::PLANE_TYPE;

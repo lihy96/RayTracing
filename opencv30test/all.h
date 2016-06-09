@@ -15,5 +15,6 @@
 #include "rayTracer.h"
 #include "scene.h"
 #include "sphere.h"
+#include "kdTree.h"
 
 #endif

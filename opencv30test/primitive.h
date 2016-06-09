@@ -5,7 +5,7 @@
 
 class Ray;
 class IntersectResult;
-
+class Material;
 
 class Primitive
 {
@@ -19,9 +19,6 @@ public:
 	virtual AABB getAABB() = 0;
 	const int getLastRay() const { return id; }
 	int& setID() { return id; }
-	//virtual Color getColor(MyVec3& a_Pos) = 0;
-
-
 
 	int id;
 };
