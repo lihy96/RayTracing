@@ -43,9 +43,9 @@ public:
 		return 0;
 		
 	}
-	int getType()  const override{
-		return Config::PLANE_TYPE;
-	}
+	//int getType()  const override{
+	//	return Config::PLANE_TYPE;
+	//}
 
 	AABB getAABB() override {
 		return AABB(MyVec3(-10000.0, -10000.0, -10000.0), MyVec3(20000.0, 20000.0, 20000.0));
@@ -77,22 +77,13 @@ public:
 
 	//	constructor
 	Plane():
-	normalVec(MyVec3(0, 1, 0)), od(0), ma(0){}
+	Primitive(Config::PLANE_TYPE), normalVec(MyVec3(0, 1, 0)), od(0), ma(0){}
 
 	Plane(const MyVec3& normalVec, double od):
-	normalVec(MyVec3(normalVec).unit()), od(od), ma(0){}
+	Primitive(Config::PLANE_TYPE),normalVec(MyVec3(normalVec).unit()), od(od), ma(0){}
 
-	Plane(const MyVec3& normalVec, double od, Chess& m):
-	normalVec(MyVec3(normalVec).unit()), od(od), ma(&m){}
-
-	Plane(const MyVec3& normalVec, double od, Phong& m):
-	normalVec(MyVec3(normalVec).unit()), od(od), ma(&m){}
-
-	Plane(const MyVec3& normalVec, double od, Chess* m):
-	normalVec(MyVec3(normalVec).unit()), od(od), ma(m){}
-
-	Plane(const MyVec3& normalVec, double od, Phong* m):
-	normalVec(MyVec3(normalVec).unit()), od(od), ma(m){}
+	Plane(const MyVec3& normalVec, double od, Material* m):
+	Primitive(Config::PLANE_TYPE),normalVec(MyVec3(normalVec).unit()), od(od), ma(m){}
 
 private:
 	MyVec3 normalVec;

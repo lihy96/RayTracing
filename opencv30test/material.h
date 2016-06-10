@@ -5,39 +5,41 @@
 #include "myVec3.h"
 #include "texture.h"
 #include <cmath>
-
+#include <assert.h>
 class Material
 {
 public:
-	Material(const Color& _color, double _diffuse, double _specular, double _shininess = 20, double _reflectiveness = 0, double _refraction = 0, double _refraIndex = 1.0, double _difflection = 0):
-	color(_color), //颜色
-	diffuse(_diffuse), specular(_specular),	//漫反射和镜面反射
-	shininess(_shininess),	//发光系数
-	reflectiveness(_reflectiveness), refraction(_refraction), //反射和折射
-	refraIndex(_refraIndex),//折射系数
-	difflection(_difflection),//软阴影
-	
+	Material(const Color& _color, char* filename = 0):
+	color(_color), //颜色	
 	m_Texture(0),//纹理贴图
 	m_UScale( 1.0 ),
 	m_VScale( 1.0 )
-	{}
+	{
+		if (filename != 0)
+			SetTexture(new Texture(filename));	
+	}
 
-	const double getReflectiveness() const{	return reflectiveness;	}
-/*	virtual const Color sample(const MyVec3* ray, const MyVec3* L, const MyVec3* normal, const MyVec3* position, const Color* light)const = 0;*/	
+	
 	virtual const Color sample(const MyVec3& ray, const MyVec3& L, const MyVec3& normal, const MyVec3& position, const Color& light)const = 0;
 
 	//为了实现纹理贴图专门加的函数
 	virtual const Color sample(const MyVec3& ray, const MyVec3& L, const  MyVec3& normal, const MyVec3& position, const Color& light, const Color& primiColor)const = 0;
 	
-	const double getDiffuse() const { return diffuse; }
-	const double getSpecular() const {	return specular; }	
-	const double getRefraction() const { return refraction; }
-	const double getRefraIndex() const { return refraIndex; }
-	const double getDifflection() const { return difflection; }
+	virtual const double getDiffuse() const = 0;
+	virtual const double getSpecular() const = 0;
+	virtual const double getShininess() const = 0;
+	virtual const double getReflectiveness() const = 0;
+	virtual const double getRefraction() const = 0;
+	virtual const double getRefraIndex() const = 0;
+	virtual const double getGlossyReflect() const = 0;
 
 	const Color& getColor() const {	return color;	}
 
-//纹理贴图的函数
+		//	BRDF
+	virtual const Color& getEmission() const = 0;
+	virtual const int getBRDFType() const = 0;
+
+	//纹理贴图的函数
 	void SetTexture( Texture* a_Texture ) { m_Texture = a_Texture; }
 	Texture* GetTexture() { return m_Texture; }
 	void Material::SetUVScale( double a_UScale, double a_VScale ){ 
@@ -55,8 +57,6 @@ public:
 
 //----------------------------------------------------------------------------
 	Color color;
-	double diffuse, specular, shininess, reflectiveness, refraction, refraIndex;
-	double difflection;  //漫反射反射，用于软阴影部分
 	
 	//纹理贴图的部分
 	Texture* m_Texture;;
@@ -66,9 +66,10 @@ public:
 class Phong:public Material
 {
 public:
-	Phong(const Color& color, double diffuse, double specular, double shininess = 20, double reflectiveness = 0, double refraction = 0, double refraIndex = 1.0, double difflection = 0):
-	Material(color, diffuse, specular, shininess, reflectiveness, refraction, refraIndex, difflection){}
-	
+	Phong(const Color& color, double diffuse, double specular, double shininess = 20, double reflectiveness = 0, double refraction = 0, double refraIndex = 1.0, double glossyReflect = 0.0, char* filename = 0):
+	Material(color, filename),diffuse(diffuse), specular(specular), shininess(shininess), 
+	reflectiveness(reflectiveness), refraction(refraction), refraIndex(refraIndex), glossyReflect(glossyReflect){}
+
 	const Color sample(const MyVec3* ray, const MyVec3* L, const MyVec3* normal, const MyVec3* position, const Color* light)const
 	{
 		Color re;
@@ -121,24 +122,28 @@ public:
 
 		re = NdotL * diffuse * color * light + std::pow(VdotR, shininess) * specular * light; 
 
-	}	
+	}
+	virtual const double getDiffuse() const {	return diffuse;	}
+	virtual const double getSpecular() const {	return specular;	}
+	virtual const double getShininess() const {	return shininess;	}
+	virtual const double getReflectiveness() const {	return reflectiveness;	}
+	virtual const double getRefraction() const {	return refraction;	}	
+	virtual const double getRefraIndex() const {	return refraIndex;	}
+	virtual const double getGlossyReflect() const {	return glossyReflect;	}
+
+	virtual const Color& getEmission() const {	exit(124); return Color(0,0,0);}
+	virtual const int getBRDFType() const {	exit(125);return 0;}
+	double diffuse, specular, shininess, reflectiveness, refraction, refraIndex, glossyReflect;	
 };
 
 class Chess:public Material
 {
 public:
-	Chess(const Color& color, const Color& color1, double diffuse, double specular, double shininess = 20, double reflectiveness = 0, double refraction = 0, double refraIndex = 1.0,double difflection = 0, double scale = 0.1):
-	Material(color, diffuse, specular, shininess, reflectiveness, refraction, refraIndex,difflection), color1(color1), scale(scale){}
+	Chess(const Color& color, const Color& color1, double diffuse, double specular, double shininess = 20, double reflectiveness = 0, double refraction = 0, double refraIndex = 1.0, double glossyReflect = 0.0, double scale = 0.1, char* filename = 0):
+	Material(color, filename), color1(color1), scale(scale),
+	diffuse(diffuse), specular(specular), shininess(shininess), 
+	reflectiveness(reflectiveness), refraction(refraction), refraIndex(refraIndex), glossyReflect(glossyReflect){}
 	
-	const Color sample(const MyVec3& ray, const MyVec3& L, const  MyVec3& normal, const MyVec3& position, const Color& light,const Color& primiColor)const{	
-		int oe = abs(floor(position.x * scale) + floor(position.z * scale));
-		if (oe & 1)
-			return color * light;
-		else
-			return color1 * light;
-	}
-
-
 	const Color sample(const MyVec3* ray, const MyVec3* L, const MyVec3* normal, const MyVec3* position, const Color* light)const
 	{
 		int oe = abs(floor(position->x * scale) + floor(position->z * scale));
@@ -174,9 +179,56 @@ public:
 		else
 			re = color1;
 	}
+
+	virtual const double getDiffuse() const {	return diffuse;	}
+	virtual const double getSpecular() const {	return specular;	}
+	virtual const double getShininess() const {	return shininess;	}
+	virtual const double getReflectiveness() const {	return reflectiveness;	}
+	virtual const double getRefraction() const {	return refraction;	}	
+	virtual const double getRefraIndex() const {	return refraIndex;	}
+	virtual const double getGlossyReflect() const {	return glossyReflect;	}
+	virtual const Color& getEmission() const {	assert(false);	return Color(0,0,0);}
+	virtual const int getBRDFType() const {	assert(false);	return 0;}
+
 private:
 	Color color1;
 	double scale;
+	double diffuse, specular, shininess, reflectiveness, refraction, refraIndex, glossyReflect;		
+
+};
+
+
+class BRDF : public Material
+{
+public:
+	BRDF(const Color& color, const Color& emission, int BRDFType, double refraIndex = 1.0, char* filename = 0):
+	Material(color, filename), emission(emission), BRDFType(BRDFType), refraIndex(refraIndex){}
+
+	virtual const Color& getEmission() const {	return emission;	}
+	virtual const int getBRDFType() const {	return BRDFType;	}
+
+
+	//virtual const Color sample(const MyVec3& ray, const MyVec3& L, const MyVec3& normal, const MyVec3& position, const Color& light)const  {assert(false);return Color(0,0,0);}
+
+	//virtual const Color sample(const MyVec3& ray, const MyVec3& L, const MyVec3& normal, const Primitive* pri, const MyVec3& position, const Color& light)const {	exit(1);	return Color(0,0,0);	}
+	//virtual const Color sample(const MyVec3& ray, const MyVec3& L, const MyVec3& normal, const Color& texc, const MyVec3& position, const Color& light)const {	exit(2);	return Color(0,0,0);}	
+
+	virtual const Color sample(const MyVec3& ray, const MyVec3& L, const MyVec3& normal, const MyVec3& position, const Color& light)const {exit(1);return Color(0,0,0);};
+
+	//为了实现纹理贴图专门加的函数
+	virtual const Color sample(const MyVec3& ray, const MyVec3& L, const  MyVec3& normal, const MyVec3& position, const Color& light, const Color& primiColor)const{exit(123);return Color(0,0,0);}
+
+	virtual const double getDiffuse() const {	assert(false);	return 0;}
+	virtual const double getSpecular() const {	assert(false);return 0;	}
+	virtual const double getShininess() const {	assert(false);	return 0;}
+	virtual const double getReflectiveness() const {	assert(false);	return 0;}
+	virtual const double getRefraction() const {	assert(false);return 0;	}
+	virtual const double getRefraIndex() const {	return refraIndex;	return 0;}
+	virtual const double getGlossyReflect() const {	assert(false);	return 0;}
+private:
+	Color emission;
+	int BRDFType;
+	double refraIndex;
 };
 #endif
 

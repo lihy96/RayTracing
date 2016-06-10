@@ -1,24 +1,49 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+//#define lhy
+const double randMaxHalf = (double)RAND_MAX * 0.5;
 class Config
 {
 public:
 	//物体类型
+	static const int LIGHT = 777;
 	static const int LIGHT_POINT_TYPE = 111;
 	static const int LIGHT_BOX_LIGHT = 444;
 	static const int SPHERE_TYPE = 222;
 	static const int PLANE_TYPE = 333;
 	static const int TRI_TYPE = 666;
+	static const int POLY_TYPE = 888;
 	
 	//包围盒大小
 	static const int GRIDSIZE = 200;
+	
 	static double myRand01(){ return (double)rand() / RAND_MAX; } //产生0-1之间的随机数
 	static double myRand_11(){ double maxHalf = RAND_MAX / 2; return ( maxHalf - rand() ) / maxHalf; } //产生-1 1之间的随机数
 	static double myRandhalf(){ return myRand01() * 0.5; } //产生0 0.5之间的随机数
+	static	double rand01(){
+#ifdef lhy
+		return 0.5;
+#endif		
+		double a = std::rand(); 
+		return a / RAND_MAX;
+	}
+	static double exrand01()
+	{
+#ifdef lhy
+		return 0;
+#endif
+		double a = std::rand() - randMaxHalf;
+		return a / randMaxHalf;
+	}
+	static double exrand01half()
+	{
+		return exrand01() * 0.5;
+	}
 };
 const double DEVIANCE = 1e-6;//偏移量
-const int MAX_RECURSIVE_DEEPTH = 4;	//最大递归深度
+const double DEVIATION = 1e-6;
+const int TRACEMAXRECUR = 5;	//最大递归深度
 
 
 const int SOFT_SHA_GRID_BIAN = 4;	//软阴影的格子边长
@@ -34,6 +59,7 @@ const double SAMPLES_DOWN = 1.0 / SAMPLES;
 const int MISS = 0;
 const int HIT = 1;
 
+const MyVec3 ZERO = MyVec3(0,0,0);
 const MyVec3 XPLUS = MyVec3(1, 0, 0);
 const MyVec3 YPLUS = MyVec3(0, 1, 0);
 const MyVec3 ZPLUS = MyVec3(0, 0, 1);

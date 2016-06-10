@@ -30,7 +30,7 @@ int AABB::intersect(const Ray& ray, IntersectResult& result){
 	const double EPSILON = 0.001;
 	//cout << p->distance << endl;
 	if(result.distance < INF - 1){
-		cout << "bug" ;
+		cout << "bug haha" ;
 		exit(1);
 	}
 		

@@ -15,7 +15,7 @@ ostream &operator<<(ostream &os, const MyMat &m) {
 }
 
 ostream &operator<<(ostream &os, Color &m) {
-	return os << "color r g b" << m.r() << " " << m.g() << " " << m.b();
+	return os << "color r g b" << m.r << " " << m.g << " " << m.b;
 
 }
 

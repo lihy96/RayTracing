@@ -34,14 +34,20 @@ public:
 	RayTracer(){};
 	~RayTracer(){};
 
-	void run(MyMat&, Camera&, MyObj&);//屏， 照相机， 场景中的物体
+	void run(MyMat&, Camera&);//屏， 照相机， 场景中的物体
+	void render(MyMat&, Camera&);
+
 	void initGrid(const MyObj& scene);
 
 	void addPrimiToBox(Primitive* primi, const MyVec3& loBound, const MyVec3& hiBound);
-	const Color rayTraceRecursive(const Ray& ray, const MyObj& scene, int recursiveDepth, double irefIndex,double sampleTime,double sampleDown);
-	int findNearestNoAABB(const Ray& ray,const MyObj& scene, IntersectResult& result);
-	int findNearest(const Ray& ray,const MyObj& scene, IntersectResult& result);
-	int nearest(Primitive* primi,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re);
+	//phong use
+	const Color rayTraceRecursive(const Ray& ray, int recursiveDepth, double irefIndex,double sampleTime,double sampleDown);
+	//pace tracing use
+	const Color rayTraceRecursive(const Ray& ray, IntersectResult& result, int recursiveDepth, double irefIndex, int E = 1);
+
+	int findNearestNoAABB(const Ray& ray, IntersectResult& result);
+	int findNearest(const Ray& ray, IntersectResult& result);
+	int nearest(Primitive* primi,const Ray& ray, IntersectResult& result, int& re);
 
 	double calSoftShade(BoxLight* light, MyVec3 ip, MyVec3& dir, const MyObj& scene, double sampleTime, double sampleDown);
 	
@@ -56,13 +62,16 @@ public:
 
 	//文本读入
 	void readScene(char* file, MyObj& scene);
-	void readObj(char* file, MyObj& scene);
+	void readObj(char* file, MyObj& scene,MyVec3 O, MyVec3 size, MyVec3 angles);
 
 	AABB wholeSpace;
 	MyVec3 unit;
 	MyObj allGrids[Config::GRIDSIZE+1][Config::GRIDSIZE+1][Config::GRIDSIZE+1];
 
-	KdTreeNode* root;
+	MyObj scene;
+	void addScene(MyObj& _scene){scene = _scene;}
+
+	//KdTreeNode* root;
 };
 
 /*

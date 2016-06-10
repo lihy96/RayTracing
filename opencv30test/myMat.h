@@ -25,6 +25,8 @@ public:
 		
 	}
 
+	cv::Vec3d& pixel(int r, int c){	return mat.at<cv::Vec3d>(r, c);	}
+
 
 #ifdef MYMATDEBUG
 	friend ostream &operator<<(ostream &os, const MyMat &m) ;

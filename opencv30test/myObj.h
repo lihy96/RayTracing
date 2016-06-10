@@ -6,6 +6,7 @@
 #include "plane.h"
 #include "light.h"
 #include "triangle.h"
+#include "kdTree.h"
 
 class MyObj
 {
@@ -42,6 +43,9 @@ public:
 	std::vector<PointLight*> plight_vec;
 	std::vector<BoxLight*> blight_vec;
 	std::vector<Triangle*> tri_vec;
+	std::vector<TriangleTree*> poly_vec;
+	
+	//TriangleTree* root;
 };
 
 #endif

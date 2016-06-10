@@ -11,9 +11,9 @@
 class Sphere:public Primitive
 {
 public:
-	Sphere() : center(MyVec3(0,0,0)) , R(0) ,ma(0){ init(); };
-	Sphere(const MyVec3& _center, double _R) : center(_center) , R(_R) ,ma(0){ init(); };
-	Sphere(const MyVec3& _center, double _R, Phong* _ma):center(_center) , R(_R) ,ma(_ma){ init();};
+	Sphere() : Primitive(Config::SPHERE_TYPE),center(MyVec3(0,0,0)) , R(0) ,ma(0){ init(); };
+	Sphere(const MyVec3& _center, double _R) : Primitive(Config::SPHERE_TYPE),center(_center) , R(_R) ,ma(0){ init(); };
+	Sphere(const MyVec3& _center, double _R, Material* _ma): Primitive(Config::SPHERE_TYPE),center(_center) , R(_R) ,ma(_ma){ init();};
 	~Sphere(){};
 	
 	int intersect(const Ray& ray, IntersectResult& result) override{	
@@ -24,26 +24,25 @@ public:
 		id = ray.getID();
 
 
-		MyVec3 v = ray.getOri() - center;
-		double judge1 = MyVec3::dot(ray.getDir(), v);
-		if(judge1 >  0)
-			return 0;
-		else{
-			double judge2 = judge1 * judge1 - v.module_2() + R_2;
-			if(judge2 < 0)
-				return 0;
-			else{
-				judge2 = sqrt(judge2);
-				double x1 = -judge1 + judge2;
-				double x2 = -judge1 - judge2;
-				if(x2 > 0){//交点在光线内部
+		MyVec3 v = center - ray.getOri();
+		double judge = MyVec3::dot(ray.getDir(), v);
+		double judge1 = judge * judge - MyVec3::dot(v, v) + R_2;
+		if(judge1 >= 0){
+			judge1 = std::sqrt(judge1);
+			double x1 = judge + judge1;
+			double x2 = judge - judge1;
+
+			if(x2 > 0){//交点在光线内部
+				if (x2 < result.distance){
 					result.intersectPoint = ray.getOri() + x2 * ray.getDir();
 					result.distance = x2;
 					result.normalVec = (result.intersectPoint - center).unit();
 					result.ma = ma;
 					result.primi = this;
 					return 1;
-				}else{	
+				}
+			}else if(x1 > 0){
+				if (x1 < result.distance){
 					result.intersectPoint = ray.getOri() + x1 * ray.getDir();
 					result.distance = x1;
 					result.normalVec = (result.intersectPoint - center).unit();
@@ -52,7 +51,9 @@ public:
 					return -1;
 				}
 			}
+			
 		}
+		return 0;
 	}
 
 	int isIntersectWithBox(const AABB& a_Box) override{ 
@@ -75,15 +76,16 @@ public:
 		return (dmin <= R_2);
 	}
 
-	int getType() const override{
-		return Config::SPHERE_TYPE;
-	}
+	//int getType() const override{
+	//	return Config::SPHERE_TYPE;
+	//}
 
 	AABB getAABB() override{
 		MyVec3 size(R, R, R);
 		return AABB(center - size, 2 * size);
 	}
-	 Material* material() {	return ma;	}
+	
+	Material* material() {	return ma;	}
 	const MyVec3& getCenter() const{	return center;	}
 	
 	const Color getColorTexture(MyVec3& a_Pos) {
@@ -108,11 +110,11 @@ public:
 	}
 
 
-private:
+
 	void init(){ R_2 = R * R; };
 	MyVec3 center;
 	double R,R_2;
-	Phong* ma;
+	Material* ma;
 };
 
 #endif

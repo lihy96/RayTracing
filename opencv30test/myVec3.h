@@ -3,10 +3,12 @@
 
 #include <cmath>
 #include <iostream>
+#include <sstream>
 using namespace std;
 
 const double EPS = 1e-8;
 const double PI = 3.1415926535897932384626;
+const double PI_DOWN = 1 / PI;
 
 class MyVec3
 {
@@ -40,7 +42,7 @@ public:
 	bool isZeroVector();
 
 
-	double operator[](int i){
+	double& operator[](int i){
 		if(i == 0)
 			return x;
 		else if (i == 1)
@@ -71,5 +73,26 @@ public:
 		}
 		return A;
 	}
+
+	void Input( std::stringstream& fin ) {
+		fin >> x >> y >> z;
+	}
+
+	MyVec3 Rotate( MyVec3 axis , double theta ){
+		MyVec3 ret;
+		double cost = cos( theta );
+		double sint = sin( theta );
+		ret.x += x * ( axis.x * axis.x + ( 1 - axis.x * axis.x ) * cost );
+		ret.x += y * ( axis.x * axis.y * ( 1 - cost ) - axis.z * sint );
+		ret.x += z * ( axis.x * axis.z * ( 1 - cost ) + axis.y * sint );
+		ret.y += x * ( axis.y * axis.x * ( 1 - cost ) + axis.z * sint );
+		ret.y += y * ( axis.y * axis.y + ( 1 - axis.y * axis.y ) * cost );
+		ret.y += z * ( axis.y * axis.z * ( 1 - cost ) - axis.x * sint );
+		ret.z += x * ( axis.z * axis.x * ( 1 - cost ) - axis.y * sint );
+		ret.z += y * ( axis.z * axis.y * ( 1 - cost ) + axis.x * sint );
+		ret.z += z * ( axis.z * axis.z + ( 1 - axis.z * axis.z ) * cost );
+		return ret;
+	}
+
 };
 #endif

@@ -1,156 +1,302 @@
 #include "kdTree.h"
 #include "primitive.h"
 #include "intersectResult.h"
+#include "ray.h"
+#include <cstdio>
+#include <fstream>
+#include <cmath>
+#include <thread>
+#include <mutex>
+#include "triangle.h"
 
-void KdTreeNode::build(){
-	//遍历所有物体，找到边界
-	for (auto& it : objects) {
-		AABB curr = it->getAABB();
-		bounds.pos = MyVec3(min(bounds.pos.x, curr.pos.x),
-							min(bounds.pos.y, curr.pos.y),
-							min(bounds.pos.z, curr.pos.z));
-		bounds.pos_2 = MyVec3(max(bounds.pos_2.x, curr.pos_2.x),
-							max(bounds.pos_2.y, curr.pos_2.y),
-							max(bounds.pos_2.z, curr.pos_2.z));
-	}
-	bounds.size = bounds.pos_2 - bounds.pos;
+std::mutex* mtx;
+int mtxTrees;
 
-	//如果当前空间中已经小于的20个物体，就不操作了
-	if (objects.size() <= MIN_OBJECT_COUNT) {
-		return;
-	}
-
-	//确定在哪里分割，注意要根据当前的轴向x,y,z 以及最大最小
-	double splitValue = getSplitValue();
-
-	vector<Primitive*> leftObjects;
-	vector<Primitive*> rightObjects;
-
-	//遍历物体，获得物体的边界，然后将他们放进各自的vector
-	for (auto& it : objects) {
-		AABB curr = it->getAABB();
-		double minn, maxx;
-		switch(axis) {
-			case 0:
-				minn = curr.pos.x;
-				maxx = curr.pos_2.x;
-			break;
-			case 1:
-				minn = curr.pos.y;
-				maxx = curr.pos_2.y;
-			break;
-			case 2:
-				minn = curr.pos.z;
-				maxx = curr.pos_2.z;
-			break;
-		}
-
-		if (minn < splitValue) {
-			leftObjects.push_back(it);
-		}
-
-		if (maxx > splitValue) {
-			rightObjects.push_back(it);
-		}
-	}
-
-	//判断这样的分割有没有真正将物体分开，如果没有的话就再次尝试构建，但是要换方向了
-	if (leftObjects.size() != objects.size() &&
-		rightObjects.size() != objects.size()) {
-		left = new KdTreeNode(depth + 1, (axis + 1) % 3, leftObjects);
-		right = new KdTreeNode(depth + 1, (axis + 1) % 3, rightObjects);
-	} else if (axisRetries < 2) {
-		axis = toggleAxis();
-		axisRetries++;
-		build();
-	} else {
-		// Do nothing since we're out of axis retries.
-	}
-	
-}
-double KdTreeNode::getSplitValue(){
-	return 0;
+TriangleBox::TriangleBox() {
+	minPos = MyVec3(INF, INF, INF);
+	maxPos = MyVec3(-INF, -INF, -INF);
 }
 
-int KdTreeNode::findNearest(const Ray& ray, IntersectResult& result) {
-
-	if (!bounds.intersect(ray, result)) {
-		return MISS;
+void TriangleBox::Update(Triangle* tri) {
+	for (int coord = 0; coord < 3; coord++) {
+		if (tri->GetMinCoord(coord) < minPos[coord]) minPos[coord] = tri->GetMinCoord(coord);
+		if (tri->GetMaxCoord(coord) > maxPos[coord]) maxPos[coord] = tri->GetMaxCoord(coord);
 	}
+}
 
-	// 对于父节点直接递归
-	if (left != NULL && right != NULL) {
-		IntersectResult leftIntersection;
-		int re_l = left->findNearest(ray, leftIntersection);
-		IntersectResult rightIntersection;
-		int re_r = right->findNearest(ray, rightIntersection);
+bool TriangleBox::Cantain(MyVec3 O) {
+	for (int coord = 0; coord < 3; coord++)
+		if (O[coord] <= minPos[coord] - EPS || O[coord] >= maxPos[coord] + EPS) return false;
+	return true;
+}
 
-		if(re_l == 0 && re_r == 0)
-			return MISS;
-	
+double TriangleBox::CalnArea() {
+	double a = maxPos.x - minPos.x;
+	double b = maxPos.y - minPos.y;
+	double c = maxPos.z - minPos.z;
+	return 2 * (a * b + b * c + c * a);
+}
 
-		if(leftIntersection.distance < rightIntersection.distance) {
-			result = leftIntersection;
-			//cout << "zuo " << re_l << endl;
-			return re_l;
-		}else if(leftIntersection.distance > rightIntersection.distance){
-			result = rightIntersection;
-			//cout << "you " << re_r << endl;
-			return re_r;
-		}else{	
-			//cout << re_l << " " <<re_r << "INF INF" << endl;
-			return 0;
-		}
-		
-	} else { //对于叶节点直接找到最近的物体即可
-		int in_out = 0;
-		//cout << "tmp " << objects.size() << endl;
-		for (auto& it : objects) {
-			IntersectResult tmp;
-			int re = it->intersect(ray, tmp);
-			//cout << it->getType() << endl;
-			if(re){
-				if (tmp.distance < result.distance){
-					result = tmp;
-					in_out = re;
-				}
+double TriangleBox::Collide(MyVec3 ray_O, MyVec3 ray_V) {
+	double minDist = -1;
+	for (int coord = 0; coord < 3; coord++) {
+		double times = -1;
+		if (ray_V[coord] >= EPS)
+			times = (minPos[coord] - ray_O[coord]) / ray_V[coord];
+		if (ray_V[coord] <= -EPS)
+			times = (maxPos[coord] - ray_O[coord]) / ray_V[coord];
+		if (times >= EPS) {
+			MyVec3 C = ray_O + ray_V * times;
+			if (Cantain(C)) {
+				//double dist = ray_O.Distance(C);
+				double dist = (ray_O - C).module();
+				if (minDist <= -EPS || dist < minDist)
+					minDist = dist;
 			}
 		}
-		//cout << "in_out " << in_out << endl;
-		return in_out;
 	}
+	return minDist;
 }
 
+TriangleNode::TriangleNode() {
+	size = 0;
+	plane = -1;
+	split = 0;
+	leftNode = rightNode = NULL;
+}
 
+TriangleNode::~TriangleNode() {
+	for (int i = 0; i < size; i++)
+		delete tris[i];
+	delete tris;
+	delete leftNode;
+	delete rightNode;
+}
 
+TriangleTree::TriangleTree() {
+	root = new TriangleNode;
+}
 
-//--------------------------------------------------------------------------------------------------
-/*
-void KdTreeNode::build(){
-	double minn[4],maxx[4];
-	for(int i = 0;i < 3;i++){
-		minn[i] = 100000.0;
-		maxx[i] = -1000000.0;
+TriangleTree::~TriangleTree() {
+	DeleteTree(root);
+}
+
+void TriangleTree::DeleteTree(TriangleNode* node) {
+	if (node->leftNode != NULL)
+		DeleteTree(node->leftNode);
+	if (node->rightNode != NULL)
+		DeleteTree(node->rightNode);
+	delete node;
+}
+
+void TriangleTree::SortTriangle(Triangle** tris, int l, int r, int coord, bool minCoord) {
+	double (Triangle::*GetCoord)(int) = minCoord ? &Triangle::GetMinCoord : &Triangle::GetMaxCoord;
+	if (l >= r) return;
+	int i = l, j = r;
+	Triangle* key = tris[(l + r) >> 1];
+	while (i <= j) {
+		while (j >= l && (key->*GetCoord)(coord) < (tris[j]->*GetCoord)(coord)) j--;
+		while (i <= r && (tris[i]->*GetCoord)(coord) < (key->*GetCoord)(coord)) i++;
+		if (i <= j) {
+			std::swap(tris[i], tris[j]);
+			i++;
+			j--;
+		}
 	}
+	SortTriangle(tris, i, r, coord, minCoord);
+	SortTriangle(tris, l, j, coord, minCoord);
+}
 
-	for(auto& it : vec){
-		AABB cur = it->getAABB();
-		for(int i = 0;i < 3;i++){
-			minn[i] = std::min(minn[i], cur.pos[i]);
-			maxx[i] = std::max(maxx[i], cur.pos_2[i]);
+void TriangleTree::DivideNode(TriangleNode* node) {
+	if (node->size * KD_MAX_THREADS >= root->size) {
+		printf("Building subKDtree(size = %d)\n", node->size);
+		mtx->lock();
+		mtxTrees++;
+		mtx->unlock();
+	}
+	//iff area0 * size0 + area1 * size1 + totalArea <= totalArea * totalSize then divide
+	Triangle** minNode = new Triangle*[node->size];
+	Triangle** maxNode = new Triangle*[node->size];
+	for (int i = 0; i < node->size; i++) {
+		minNode[i] = node->tris[i];
+		maxNode[i] = node->tris[i];
+	}
+	
+	double thisCost = node->box.CalnArea() * (node->size - 1);
+	double minCost = thisCost;
+	int bestCoord = -1, leftSize = 0, rightSize = 0;
+	double bestSplit = 0;
+	for (int coord = 0; coord < 3; coord++) {
+		SortTriangle(minNode, 0, node->size - 1, coord, true);
+		SortTriangle(maxNode, 0, node->size - 1, coord, false);
+		TriangleBox leftBox = node->box;
+		TriangleBox rightBox = node->box;
+
+		int j = 0;
+		for (int i = 0; i < node->size; i++) {
+			double split = minNode[i]->GetMinCoord(coord);
+			leftBox.maxPos[coord] = split;
+			rightBox.minPos[coord] = split;
+			for ( ; j < node->size && maxNode[j]->GetMaxCoord(coord) <= split + EPS; j++);
+			double cost = leftBox.CalnArea() * i + rightBox.CalnArea() * (node->size - j);
+			if (cost < minCost) {
+				minCost = cost;
+				bestCoord = coord;
+				bestSplit = split;
+				leftSize = i;
+				rightSize = node->size - j;
+			}
+		}
+
+		j = 0;
+		for (int i = 0; i < node->size; i++) {
+			double split = maxNode[i]->GetMaxCoord(coord);
+			leftBox.maxPos[coord] = split;
+			rightBox.minPos[coord] = split;
+			for ( ; j < node->size && minNode[j]->GetMinCoord(coord) <= split - EPS; j++);
+			double cost = leftBox.CalnArea() * j + rightBox.CalnArea() * (node->size - i);
+			if (cost < minCost) {
+				minCost = cost;
+				bestCoord = coord;
+				bestSplit = split;
+				leftSize = j;
+				rightSize = node->size - i;
+			}
 		}
 	}
 
-	bound = new AABB(MyVec3(minn[0],minn[1],minn[2]), MyVec3(maxx[0] - minn[0], maxx[1] - minn[1], maxx[2] - minn[2]));
+	delete minNode;
+	delete maxNode;
 
-	if(vec.size() < KDTREE_MIN_NODE)
-		return;
+	if (bestCoord != -1) {
+		leftSize = rightSize = 0;
+		for (int i = 0; i < node->size; i++) {
+			if (node->tris[i]->GetMinCoord(bestCoord) <= bestSplit - EPS || node->tris[i]->GetMaxCoord(bestCoord) <= bestSplit + EPS)
+				leftSize++;
+			if (node->tris[i]->GetMaxCoord(bestCoord) >= bestSplit + EPS || node->tris[i]->GetMinCoord(bestCoord) >= bestSplit - EPS)
+				rightSize++;
+		}
+		TriangleBox leftBox = node->box;
+		TriangleBox rightBox = node->box;
+		leftBox.maxPos[bestCoord] = bestSplit;
+		rightBox.minPos[bestCoord] = bestSplit;
+		double cost = leftBox.CalnArea() * leftSize + rightBox.CalnArea() * rightSize;
 
-	//get split value
-	splitPool.clear();
-	for(auto& it : vec){
+		if (cost < thisCost) {
+			node->plane = bestCoord;
+			node->split = bestSplit;
 
+			node->leftNode = new TriangleNode;
+			node->leftNode->box = node->box;
+			node->leftNode->box.maxPos[node->plane] = node->split;
+			
+			node->rightNode = new TriangleNode;
+			node->rightNode->box = node->box;
+			node->rightNode->box.minPos[node->plane] = node->split;
+			
+			node->leftNode->tris = new Triangle*[leftSize];
+			node->rightNode->tris = new Triangle*[rightSize];
+			int leftCnt = 0, rightCnt = 0;
+			for (int i = 0; i < node->size; i++) {
+				if (node->tris[i]->GetMinCoord(node->plane) <= node->split - EPS || node->tris[i]->GetMaxCoord(node->plane) <= node->split + EPS)
+					node->leftNode->tris[leftCnt++] = node->tris[i];
+				if (node->tris[i]->GetMaxCoord(node->plane) >= node->split + EPS || node->tris[i]->GetMinCoord(node->plane) >= node->split - EPS)
+					node->rightNode->tris[rightCnt++] = node->tris[i];
+			}
+			node->leftNode->size = leftSize;
+			node->rightNode->size = rightSize;
+
+			if (node->size * KD_MAX_THREADS >= root->size * 2) {
+				std::thread subThread(&TriangleTree::DivideNode, this, node->leftNode);
+				subThread.detach();
+			} else
+				DivideNode(node->leftNode);
+			DivideNode(node->rightNode);
+		}
 	}
 
+	if (node->size * KD_MAX_THREADS >= root->size) {
+		mtx->lock();
+		mtxTrees--;
+		mtx->unlock();
+	}
+}
 
-}*/
+IntersectResult TriangleTree::TravelTree(TriangleNode* node, MyVec3 ray_O, MyVec3 ray_V) {
+	//如果节点的盒子中不包含光源 
+	//如果节点的盒子和光线都不碰撞 这两种情况一定不想交
+	if (!node->box.Cantain(ray_O) && node->box.Collide(ray_O, ray_V) <= -EPS)
+		return IntersectResult();
+
+	//如果是叶子节点就遍历所有物体
+	if (node->leftNode == NULL && node->rightNode == NULL) {
+		IntersectResult ret;
+		for (int i = 0; i < node->size; i++) {
+			IntersectResult collider;
+			int flag = node->tris[i]->intersect(Ray(ray_O, ray_V),collider);//遍历这个节点中的所有三角形
+			//确实发生了碰撞，盒子包含交点，要么之前没碰撞过要么现在碰撞的距离更小
+			if (flag && node->box.Cantain(collider.intersectPoint) && (collider.distance < ret.distance))
+				ret = collider;
+		}
+		return ret;
+	}
+	
+	//如果左节点有光源
+	if (node->leftNode->box.Cantain(ray_O)) {
+		IntersectResult collider = TravelTree(node->leftNode, ray_O, ray_V);
+		//如果左节点内发生了碰撞，那么直接返回结果
+		if (collider.distance < INF - 10) return collider; 
+		//否则还得去看看右边的情况
+		return TravelTree(node->rightNode, ray_O, ray_V);//否则
+	}
+	if (node->rightNode->box.Cantain(ray_O)) {
+		IntersectResult collider = TravelTree(node->rightNode, ray_O, ray_V);
+		if (collider.distance < INF - 10) return collider;
+		return TravelTree(node->leftNode, ray_O, ray_V);
+	}
+
+	double leftDist = node->leftNode->box.Collide(ray_O, ray_V);
+	double rightDist = node->rightNode->box.Collide(ray_O, ray_V);
+	if (rightDist <= -EPS)
+		return TravelTree(node->leftNode, ray_O, ray_V);
+	if (leftDist <= -EPS)
+		return TravelTree(node->rightNode, ray_O, ray_V);
+	
+	if (leftDist < rightDist) {
+		IntersectResult collider = TravelTree(node->leftNode, ray_O, ray_V);
+		if (collider.distance < INF - 10) return collider;
+		return TravelTree(node->rightNode, ray_O, ray_V);
+	}
+	IntersectResult collider = TravelTree(node->rightNode, ray_O, ray_V);
+	if (collider.distance < INF - 10) return collider;
+	return TravelTree(node->leftNode, ray_O, ray_V);
+}
+
+void TriangleTree::BuildTree() {
+	mtx = new std::mutex;
+	DivideNode(root);
+	while (true) {
+		mtx->lock();
+		if (mtxTrees == 0) break;
+		mtx->unlock();
+	}
+	delete mtx;
+}
+
+IntersectResult TriangleTree::Collide(Ray ray) {
+	return TravelTree(root, ray.getOri(), ray.getDir());
+}
+
+int TriangleTree::intersect(Ray ray,IntersectResult& result){
+	IntersectResult temp = TravelTree(root, ray.getOri(), ray.getDir());
+	if(temp.distance < INF - 10){
+		result = temp;
+		if(result.isInObj) 
+			return -1;
+		else
+			return 1;
+	}
+	return 0;
+
+}
+

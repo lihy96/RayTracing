@@ -11,10 +11,12 @@ public:
 	IntersectResult() : 
 		intersectPoint(0,0,0),
 		normalVec(0,0,0),
-		distance(1000000000000.0){};
+		distance(1000000000000.0),
+		isInObj(false){};
 	~IntersectResult(){};
 	
 	MyVec3 intersectPoint, normalVec;
+	bool isInObj;
 	double distance;
 	const Material* ma;
 	Primitive* primi;

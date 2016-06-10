@@ -5,8 +5,9 @@
 
 class Ray
 {
-	MyVec3 origin,direction;
 public:
+	MyVec3 origin,direction;
+
 	Ray():origin(MyVec3(0, 0, 0)), direction(MyVec3(0, 0, 1)){ id = number++; };
 	Ray(const MyVec3& ori, const MyVec3& dir): origin(ori), direction(MyVec3(dir).unit()){ id = number++; };
 	~Ray(){};

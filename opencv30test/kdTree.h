@@ -1,106 +1,59 @@
 #ifndef KDTREE_H
 #define KDTREE_H
 #include <vector>
+#include "myVec3.h"
 #include "ray.h"
 #include "AABB.h"
 
-class Primitive;
+const int KD_MAX_THREADS = 6;
+
+class Triangle;
 class IntersectResult;
-class AABB;
 
-#define MIN_OBJECT_COUNT 2
-
-class KdTreeNode {
-private:
-	int depth;
-	int axisRetries;
-	int axis;
-	AABB bounds;
-	std::vector<Primitive*> objects;
-	KdTreeNode* left;
-	KdTreeNode* right;
-
-	void build();
-	int toggleAxis(){
-		return axis == 0 ? 1 : (axis == 1 ? 2 : 0);
-	}
-	double getSplitValue();
-
-
+class TriangleBox {
 public:
-	KdTreeNode() {};
-	KdTreeNode(int depth_, int axis_, std::vector<Primitive*>& objects_) :
-	depth(depth_), axis(axis_), objects(objects_) {
-		axisRetries = 0;
-		left = right = NULL;
-		build();
-	}
+	MyVec3 minPos, maxPos;
+	
+	TriangleBox();
+	~TriangleBox() {}
 
-	int findNearest(const Ray&, IntersectResult& );
-	//int getClosestObjectIntersection(const Ray&, IntersectResult&);
+	void Update(Triangle* tri); // 更新
+	bool Cantain(MyVec3 O);
+	double CalnArea();
+	double Collide(MyVec3 ray_O, MyVec3 ray_V);
 };
 
-
-
-
-/*
-#include <vector>
-#include "AABB.h"
-#include "primitive.h"
-#include "config.h"
-#include "myObj.h"
-
-//class KdTreeNode
-//{
-//public:
-//
-//
-//	double posSplit;
-//};
-
-// 分类方案
-class SplitOpt
-{
+class TriangleNode {
 public:
-	SplitOpt(){};
-	~SplitOpt(){};
+	Triangle** tris; //每个节点中多个面片
+	int size, plane; //
+	double split; //分割点
+	TriangleBox box; //盒子
+	TriangleNode* leftNode; //左节点
+	TriangleNode* rightNode;//右节点
 
-	int childnum[3];
-	double posPartition;
+	TriangleNode();
+	~TriangleNode();
 };
 
-std::vector<SplitOpt*> splitPool;
+class TriangleTree {
+	TriangleNode* root;
 
-class KdTreeNode
-{
+	void DeleteTree(TriangleNode* node);
+	void SortTriangle(Triangle** tris, int l, int r, int coord, bool minCoord);
+	void DivideNode(TriangleNode* node);
+	IntersectResult TravelTree(TriangleNode* node, MyVec3 ray_O, MyVec3 ray_V);
+
 public:
-	KdTreeNode(int _depth, int _newAxis, std::vector<Primitive*>& _vec) : depth(_depth), axis(_newAxis), vec(_vec)
-	{
-		axisChangeTimes = 0;
-		left = right = 0;
-		build();
-	};
-	~KdTreeNode(){};
-	
-	int depth;
-	int axis;
-	int axisChangeTimes;
-	std::vector<Primitive*> vec;
+	TriangleTree();
+	~TriangleTree();
 
-	
-	int changeAxis();	
-	KdTreeNode* left;
-	KdTreeNode* right;
-	
-	AABB* bound;
-	double posSplit;	//分割点
+	TriangleNode* GetRoot() { return root; }
+	void BuildTree();
+	IntersectResult Collide(Ray ray);//光线和kdtree相交的结果
+	int intersect(Ray ray,IntersectResult& result);
 
-
-	void build();
 };
-*/
-
-
 
 
 #endif

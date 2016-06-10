@@ -1,5 +1,8 @@
 #include "camera.h"
 #include "debug.h"
+#include <iostream>
+using namespace std;
+
 void Camera::emit(double sx, double sy, Ray& ray){
 	// [0,1] -> [-1,-1] : (2 * sxy - 1) but 2 is in viewScale
 	MyVec3 r = ((sx - 0.5) * viewAngleScale) * right;
@@ -28,6 +31,14 @@ Ray Camera::emit(MyVec3& p){
 	ray.setOri(eye);
 	return ray;
 
+}
+
+void Camera::emit(double u, double v, Ray& ray, int)
+{
+	MyVec3 rightOffset = (u - 0.5) * spanScaler * right;
+	MyVec3 upOffset = (v - 0.5) * spanScaleu * up;
+	ray.direction = MyVec3::normalize(front + rightOffset + upOffset);
+	ray.origin = eye;
 }
 
 

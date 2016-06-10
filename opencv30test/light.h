@@ -11,14 +11,18 @@
 class Light : public Primitive
 {
 public:
+	Light():
+	Primitive(Config::LIGHT){}
 	Light(const Color& color):
-	color(color){}
+	Primitive(Config::LIGHT),color(color){}
+
 	const Color& getColor() const {	return color;	}
 	void setColor(const Color& color){	this->color = color;}
-	Material* material() {	cout << "bug!"; exit(33);	}
+	//Material* material() {	cout << "bug!"; exit(33);	}
 	//int intersect(const Ray& ray, IntersectResult& result) const ;
 	//int isIntersectWithBox(const AABB& a_Box) ;
 	//AABB getAABB() ;
+	//virtual Material* material();
 private:
 	Color color;
 };
@@ -28,14 +32,19 @@ class PointLight : public Light
 public:
 	PointLight(double x, double y, double z, double r, const Color& color):
 	Light(color),
-	position(MyVec3(x, y, z), r){}
+	position(MyVec3(x, y, z), r){type = Config::LIGHT_POINT_TYPE;}
+
 	PointLight(const MyVec3& center, double r, const Color& color):
 	Light(color),
-	position(center, r){}
+	position(center, r){type = Config::LIGHT_POINT_TYPE;}
+
 	PointLight(const Sphere& position, const Color& color):
 	Light(color),
-	position(position){}
-	
+	position(position){type = Config::LIGHT_POINT_TYPE;}
+
+	PointLight(const Sphere& position):
+	position(position){type = Config::LIGHT_POINT_TYPE;}
+
 	Sphere& get() { return position; }
 
 	int intersect(const Ray& ray, IntersectResult& result) override {
@@ -48,9 +57,9 @@ public:
 	int isIntersectWithBox(const AABB& a_Box) override {
 		return position.isIntersectWithBox(a_Box);
 	}
-	int getType() const override {
-		return Config::LIGHT_POINT_TYPE;
-	}
+	//int getType() const override {
+	//	return Config::LIGHT_POINT_TYPE;
+	//}
 	AABB getAABB() override {
 		return position.getAABB();
 	}
@@ -58,6 +67,8 @@ public:
 	//Color getColorTexture(MyVec3& a_Pos) {
 	//	return BLACK;
 	//}
+
+	Material* material() { return position.material();}
 
 private:
 	Sphere position;//光源的本质是一个球
@@ -70,11 +81,13 @@ class BoxLight : public Light
 public:
 	BoxLight():
 	Light(WHITE),
-	box(MyVec3(0,0,0), MyVec3(0,0,0)){ initSampleGrid(); }
+	box(MyVec3(0,0,0), MyVec3(0,0,0)),
+	sampleGrid(0){ type = Config::LIGHT_BOX_LIGHT; initSampleGrid(); }
 
 	BoxLight(const AABB& _box, const Color& color):
 	Light(color),
-	box(_box){ initSampleGrid(); }
+	box(_box),
+	sampleGrid(0){ type = Config::LIGHT_BOX_LIGHT; initSampleGrid(); }
 	
 	AABB& get() { return box; }
 
@@ -90,9 +103,9 @@ public:
 	int isIntersectWithBox(const AABB& a_Box) override {
 		return box.isIntersect(a_Box);
 	}
-	int getType() const override {
-		return Config::LIGHT_BOX_LIGHT;
-	}
+	//int getType() const override {
+	//	return Config::LIGHT_BOX_LIGHT;
+	//}
 
 	AABB getAABB() override {
 		return box;
@@ -103,23 +116,17 @@ public:
 	//}
 
 
-	void initSampleGrid(){//初始化软阴影采样网格
-		int seq[SOFT_SHA_GRID_SIZE+1];
-		for(int i = 0;i < SOFT_SHA_GRID_SIZE;i++)
-			seq[i] = i;
-		random_shuffle(seq, seq+SOFT_SHA_GRID_SIZE);
-		for(int i = 0; i < SOFT_SHA_GRID_SIZE; i++){
-			sampleGrid[i][0] = (seq[i] / SOFT_SHA_GRID_BIAN) * box.getSize().x / SOFT_SHA_GRID_BIAN + box.getPos().x;
-			sampleGrid[i][1] = (seq[i] % SOFT_SHA_GRID_BIAN) * box.getSize().z / SOFT_SHA_GRID_BIAN + box.getPos().z;
-		}
-	}
-
-	double getSampleGridX(int id){ return sampleGrid[id & SOFT_SHA_GRID_MAX][0]; }//返回盒子光源的网格的坐标x
-	double getSampleGridY(int id){ return sampleGrid[id & SOFT_SHA_GRID_MAX][1]; }//返回盒子光源的网格的坐标z
-
+	void initSampleGrid();
+	double getSampleGridX(int a){ return sampleGrid[(a & SAMPLEGRIDSIZEMOD) << 1]; }//返回盒子光源的网格的坐标x
+	double getSampleGridY(int a){ return sampleGrid[((a & SAMPLEGRIDSIZEMOD) << 1) ^ 1]; }//返回盒子光源的网格的坐标z
+	Material* material() {	cout << "aa" << endl; exit(13);return 0;	}
+	static const int SAMPLEGRIDSIZE;
+	static const int SAMPLEGRIDSIZEMOD;
+	static const int SAMPLEGRIDSIZESQRT;
+	static const double SAMPLEGRIDSIZESQRTDOWN;
 private:
 	AABB box;//光源的本质是一个盒子
-	double sampleGrid[SOFT_SHA_GRID_SIZE+1][2+1];//盒子光源的网格坐标x,y
+	double* sampleGrid;//盒子光源的网格坐标x,y
 };
 
 

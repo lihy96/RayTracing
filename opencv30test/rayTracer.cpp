@@ -1,5 +1,17 @@
 #include "rayTracer.h"
 
+#define PATHTRACE
+
+#ifdef PATHTRACE
+#define PUSU
+#define DIFF 0
+#define SPEC 1
+#define REFR 2
+#endif
+
+
+
+
 void RayTracer::initGrid(const MyObj& scene){
 	MyVec3 loBound(-15.0, -10.0, -5.0), hiBound(15.0, 10.0, 30.0);
 	wholeSpace = AABB(loBound, hiBound - loBound);
@@ -34,31 +46,8 @@ void RayTracer::initGrid(const MyObj& scene){
 //#define jingshen
 //#define KDTREE
 #define SAMPLEWAY
-void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
-
-#ifdef KDTREE
-	std::vector<Primitive*> objects;
-	objects.clear();
-	for (auto& it :myobj.sphere_vec){	
-		objects.push_back(it);
-	}
-	for (auto& it : myobj.plane_vec){
-		objects.push_back(it);
-	}
-	for (auto& it :myobj.plight_vec){
-		objects.push_back(it);
-	}
-	for (auto& it : myobj.blight_vec){
-		objects.push_back(it);
-	}
-	for (auto& it : myobj.tri_vec){
-		objects.push_back(it);
-	}
-	root = new KdTreeNode(0, 0, objects);
-#endif
-
-
-	initGrid(myobj);
+void RayTracer::run(MyMat& m, Camera& camera){
+	initGrid(scene);
 
 	int rows = m.getRow(), cols = m.getCol();
 
@@ -74,13 +63,13 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 			//	double disturbX = rand() * DISTURB / RAND_MAX;
 			//	double disturbY = rand() * DISTURB / RAND_MAX;
 			//	Ray ray = camera.emit(u + disturbX, v + disturbY);
-			//	color += DEEP_OF_FIELD_NUM_DOWN *  rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0).getImgColor();
+			//	color += DEEP_OF_FIELD_NUM_DOWN *  rayTraceRecursive(ray, myobj, TRACEMAXRECUR, 1.0).getImgColor();
 			//}
 			//Ray ray = camera.emit(u,v);// 向转化过来的点发出一条光
 			MyVec3 vec(1- 2 * u + camera.eye.x,  2 * v - 1 + camera.eye.y ,1 + camera.eye.z);
 			Ray ray = camera.emit(vec);
 			//cout << ray << endl << camera.emit(u,v)<< endl << endl;
-			color = rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0, SAMPLES, SAMPLES_DOWN).getImgColor();
+			color = rayTraceRecursive(ray, myobj, TRACEMAXRECUR, 1.0, SAMPLES, SAMPLES_DOWN).getImgColor();
 			m.setPixel(r, c, color);
 		}
 
@@ -139,11 +128,11 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 		
 						camera.eye.x -= disturbX;
 						camera.eye.y -= disturbY;
-						color += DEEP_OF_FIELD_NUM_DOWN * SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0, SAMPLES, SAMPLES_DOWN).getImgColor();
+						color += DEEP_OF_FIELD_NUM_DOWN * SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray, myobj, TRACEMAXRECUR, 1.0, SAMPLES, SAMPLES_DOWN).getImgColor();
 					}
 #else
 					Ray ray = camera.emit(sampleStartU + x * sample_width, sampleStartV + y * sample_height);
-					color += SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray, myobj, MAX_RECURSIVE_DEEPTH, 1.0, SAMPLES, SAMPLES_DOWN).getImgColor();
+					color += SUPER_SAMPLES_2_DOWN * rayTraceRecursive(ray,TRACEMAXRECUR, 1.0, SAMPLES, SAMPLES_DOWN).getImgColor();
 #endif
 				}
 			}
@@ -162,7 +151,7 @@ void RayTracer::run(MyMat& m, Camera& camera, MyObj& myobj){
 
 //找到最近的物体的交点
 //没有交点返回0，有物体相交：如果是光源则返回-1；如果是非光源的物体则返回1；
-int RayTracer::findNearestNoAABB(const Ray& ray, const MyObj& scene, IntersectResult& result){
+int RayTracer::findNearestNoAABB(const Ray& ray, IntersectResult& result){
 	bool is_light = false;
 	int in_out = 0;
 	//在场景中的所有物体中寻找最近的一个交点
@@ -200,15 +189,52 @@ int RayTracer::findNearestNoAABB(const Ray& ray, const MyObj& scene, IntersectRe
 		}
 	}
 
-	if(result.distance == INF)//没有相加的物体返回0
+	for (auto& it : scene.blight_vec){
+		IntersectResult temp;
+		int re = (it->get()).intersect(ray, temp);
+		if (re){
+			if (temp.distance < result.distance){
+				is_light = true;
+				result = temp;
+				result.primi = it;
+				in_out = re;
+			}
+		}
+	}
+
+	for (auto& it : scene.poly_vec){
+		IntersectResult temp;
+		int re = it->intersect(ray, temp);
+		if (re){
+			if (temp.distance < result.distance){
+				result = temp;
+				in_out = re;
+			}
+		}
+	}
+
+	//IntersectResult temp;
+	//int re = scene.root->intersect(ray, temp);
+	//if (re){
+	//	if (temp.distance < result.distance){
+	//		result = temp;
+	//		in_out = re;
+	//	}
+	//}
+
+	if(result.distance > INF - 1)//没有相加的物体返回0
 		return 0;
 	else //相交了的话反映是内部还是外部
 		return in_out;
 }
 
 
-
-int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& result){
+#define NO_BOX
+int RayTracer::findNearest(const Ray& ray, IntersectResult& result){
+#ifdef NO_BOX	
+	return findNearestNoAABB(ray,result);
+#endif	
+	
 	//	X/Y/Z: current coordinate of grid 
 	
 	int gridSize = Config::GRIDSIZE;
@@ -295,28 +321,28 @@ int RayTracer::findNearest(const Ray& ray, const MyObj& scene, IntersectResult& 
 	int re = MISS;
 	while (true){
 		for (auto& it : allGrids[X][Y][Z].sphere_vec){	
-			if (nearest(it, ray, scene, result, re)){
+			if (nearest(it, ray,result, re)){
 				goto closer;
 			}
 		}
 		for (auto& it : allGrids[X][Y][Z].plane_vec){
-			if (nearest(it, ray, scene, result, re)){
+			if (nearest(it, ray, result, re)){
 				goto closer;
 			}
 		}
 		for (auto& it : allGrids[X][Y][Z].plight_vec){
 
-			if (nearest(it, ray, scene, result, re)){
+			if (nearest(it, ray,result, re)){
 				goto closer;
 			}
 		}
 		for (auto& it : allGrids[X][Y][Z].blight_vec){
-			if (nearest(it, ray, scene, result, re)){
+			if (nearest(it, ray, result, re)){
 				goto closer;
 			}
 		}
 		for (auto& it : allGrids[X][Y][Z].tri_vec){
-			if (nearest(it, ray, scene, result, re)){
+			if (nearest(it, ray, result, re)){
 				goto closer;
 			}
 		}
@@ -354,15 +380,15 @@ closer:
 	//	find the correct intersection
 	while (true){
 		for (auto& it : allGrids[X][Y][Z].sphere_vec)				
-			nearest(it, ray, scene, result, re);
+			nearest(it, ray, result, re);
 		for (auto& it : allGrids[X][Y][Z].plane_vec)
-			nearest(it, ray, scene, result, re);
+			nearest(it, ray,  result, re);
 		for (auto& it : allGrids[X][Y][Z].plight_vec)
-			nearest(it, ray, scene, result, re);
+			nearest(it, ray, result, re);
 		for (auto& it : allGrids[X][Y][Z].blight_vec)
-			nearest(it, ray, scene, result, re);
+			nearest(it, ray,result, re);
 		for (auto& it : allGrids[X][Y][Z].tri_vec)
-			nearest(it, ray, scene, result, re);
+			nearest(it, ray,result, re);
 
 		if (tmax.x < tmax.y){
 			if (tmax.x < tmax.z){
@@ -405,12 +431,12 @@ closer:
 	return re;
 }
 
-const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int recursiveDepth, double irefIndex,double sampleTime,double sampleDown){
+const Color RayTracer::rayTraceRecursive(const Ray& ray, int recursiveDepth, double irefIndex,double sampleTime,double sampleDown){
 	
 	Color re = BLACK;
 	IntersectResult	result;
 	result.distance = INF;
-	double in_out = findNearest(ray, scene, result);
+	double in_out = findNearest(ray,result);
 	//cout << result.distance << endl;
 	
 	//cout << "haha" << endl;
@@ -463,7 +489,7 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 		//判断光源是否能照到表面交点
 		Ray shadowRay(result.intersectPoint + DEVIANCE * L, L); //从表面向光源发射一条光线
 		IntersectResult temp;
-		findNearest(shadowRay, scene, temp);
+		findNearest(shadowRay,temp);
 		if(temp.primi != it)
 			continue;
 
@@ -488,10 +514,10 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 	// 计算反射的情况
 	double reflectiveness = result.ma->getReflectiveness();
 	if (recursiveDepth > 0 && reflectiveness > 0){
-		double diffReflectOffset = result.primi->material()->difflection;
+		double diffReflectOffset = result.primi->material()->getGlossyReflect();
 		//	only perform diffuse reflection for primary rays; otherwise it's just too slow.
 #ifdef SAMPLEWAY
-		if ((diffReflectOffset > 0) && (recursiveDepth == MAX_RECURSIVE_DEEPTH)){
+		if ((diffReflectOffset > 0) && (recursiveDepth == TRACEMAXRECUR)){
 			MyVec3 dire = ray.getDir() - 2.0 * MyVec3::dot(ray.getDir(), result.normalVec) * result.normalVec;
 			//	direXZ and dire are vertical crossing in xz plane
 			//MyVec3 direXZ(dire.z, dire.y, -dire.x);
@@ -504,13 +530,13 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 				MyVec3 realDire = dire + xzoffs * diffReflectOffset * direXZ + yoffs * diffReflectOffset * direY;
 				MyVec3::normalize(realDire);
 				Ray reflect(result.intersectPoint + DEVIANCE * realDire, realDire);
-				Color got = rayTraceRecursive(reflect, scene, recursiveDepth - 1, irefIndex,sampleTime, sampleDown);
+				Color got = rayTraceRecursive(reflect,recursiveDepth - 1, irefIndex,sampleTime, sampleDown);
 				//re = re + reflectiveness * got * result.primi->material()->getColor();
 				re = re + reflectiveness * got * ColorTexture;
 			}
 		}
 #else
-		if ((diffReflectOffset > 0) && (recursiveDepth > MAX_RECURSIVE_DEEPTH - 2)){
+		if ((diffReflectOffset > 0) && (recursiveDepth > TRACEMAXRECUR - 2)){
 			MyVec3 dire = ray.getDir() - 2.0 * MyVec3::dot(ray.getDir(), result.normalVec) * result.normalVec;
 			//	direXZ and dire are vertical crossing in xz plane
 			//MyVec3 direXZ(dire.z, dire.y, -dire.x);
@@ -535,9 +561,9 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 			//	in order to figure out right intersection
 			Ray reflect(result.intersectPoint + DEVIANCE * dire, dire);
 #ifdef SAMPLEWAY
-			Color got = rayTraceRecursive(reflect, scene, recursiveDepth - 1, irefIndex, sampleTime, sampleDown);
+			Color got = rayTraceRecursive(reflect,recursiveDepth - 1, irefIndex, sampleTime, sampleDown);
 #else
-			Color got = rayTraceRecursive(reflect, scene, recursiveDepth - 1, irefIndex, sampleTime * 0.25, sampleDown*4);
+			Color got = rayTraceRecursive(reflect,recursiveDepth - 1, irefIndex, sampleTime * 0.25, sampleDown*4);
 #endif
 			//re = re + reflectiveness * got * result.primi->material()->getColor();
 			re = re + reflectiveness * got * ColorTexture;
@@ -563,21 +589,167 @@ const Color RayTracer::rayTraceRecursive(const Ray& ray, const MyObj& scene, int
 		if (cosT > 0.0){
 			MyVec3 T = (n * ray.getDir()) + (n * cosI - sqrt(cosT)) * N;
 #ifdef SAMPLEWAY
-			Color got = rayTraceRecursive(Ray(result.intersectPoint + DEVIANCE * T, T), scene, recursiveDepth - 1, tIndex, sampleTime, sampleDown);
+			Color got = rayTraceRecursive(Ray(result.intersectPoint + DEVIANCE * T, T),recursiveDepth - 1, tIndex, sampleTime, sampleDown);
 #else
-			Color got = rayTraceRecursive(Ray(result.intersectPoint + DEVIANCE * T, T), scene, recursiveDepth - 1, tIndex, sampleTime * 0.25, sampleDown * 4.0);
+			Color got = rayTraceRecursive(Ray(result.intersectPoint + DEVIANCE * T, T),recursiveDepth - 1, tIndex, sampleTime * 0.25, sampleDown * 4.0);
 #endif
 			// apply Beer's law
 			Color absorbance = -result.distance * 0.15 * result.ma->getColor();				
-			Color transparency = Color(exp(absorbance.r()), exp(absorbance.g()), exp(absorbance.b()));				
+			Color transparency = Color(exp(absorbance.r), exp(absorbance.g), exp(absorbance.b));				
 			re = re + got * transparency;
 		}
 	}
 	return re;
 }
 
+	const Color RayTracer::rayTraceRecursive(const Ray& ray, IntersectResult& result, int recursiveDepth, double irefIndex, int E){
+		//cout << "haha"<< endl;
+		double in_out = findNearest(ray, result);
+		if (in_out == 0)
+			return BLACK;
+		MyVec3 nl = in_out * result.normalVec;
+		Color color = result.primi->material()->color;
+		
+		const Color& e = result.primi->material()->getEmission();
 
-int RayTracer::nearest(Primitive* it,const Ray& ray, const MyObj& scene, IntersectResult& result, int& re){
+		double p = (color.r > color.g && color.r > color.b) ? color.r : (color.g > color.b ? color.g : color.b);
+		if (recursiveDepth + 1 > TRACEMAXRECUR || p == 0){
+			double ans = Config::rand01();
+			if (ans < p){
+				color = (1.0 / p) * color;
+				//cout << ans << " " << p << endl;
+			}	
+			else
+				return E * e;
+		}
+		IntersectResult resultNext;
+		//cout << result.primi->type << endl;
+		switch(result.primi->material()->getBRDFType()){
+		case DIFF:	{
+			double r1 = 2 * PI * Config::rand01();
+			double r2 = Config::rand01();
+			double r2s = sqrt(r2);
+			MyVec3 w = nl;
+			MyVec3 u = MyVec3::cross(fabs(w.x) > 0.1 ? MyVec3(0, 1, 0) : MyVec3(1, 0, 0), w);
+			MyVec3::normalize(u);
+			MyVec3 v = MyVec3::cross(w, u);
+			MyVec3 d = (cos(r1) * r2s * u + sin(r1) * r2s * v + sqrt(1 - r2) * w);
+			MyVec3::normalize(d);
+			Color el;
+			for (auto& it : scene.plight_vec){
+				Sphere& po = it->get();
+				const MyVec3& sp = po.getCenter();  
+				MyVec3 sw = sp - result.intersectPoint;
+				MyVec3 su = MyVec3::cross((fabs(sw.x) > .1 ? MyVec3(0, 1, 0) : MyVec3(1, 0, 0)), sw);
+				MyVec3::normalize(su);
+				MyVec3 sv = MyVec3::cross(sw, su);
+				double cos_a_max = sqrt(1 - po.R_2 / MyVec3::dot(result.intersectPoint - sp, result.intersectPoint - sp));
+				double eps1 = Config::rand01(), eps2 = Config::rand01();
+				double cos_a = 1 - eps1 + eps1 * cos_a_max;
+				double sin_a = sqrt(1 - cos_a * cos_a);
+				double phi = 2 * PI * eps2;
+				MyVec3 L = cos(phi) * sin_a * su + sin(phi) * sin_a * sv + cos_a * sw;
+				MyVec3::normalize(L);
+				Ray shadowRay(result.intersectPoint + DEVIATION * L, L);
+				IntersectResult temp;
+				findNearest(shadowRay, temp);	
+
+				if (temp.primi != it)
+					continue;
+				double omega = 2 * PI * (1 - cos_a_max);
+				el = el + (PI_DOWN * omega * MyVec3::dot(L, nl)) * (color * (po.material()->getEmission()));
+			}
+			Color got = rayTraceRecursive(Ray(result.intersectPoint + DEVIATION * d, d), resultNext, recursiveDepth + 1, irefIndex, 0);
+			return E * e + el + color * got;
+			}
+		case SPEC:{
+			MyVec3 nd = ray.direction - 2.0 * MyVec3::dot(ray.direction, result.normalVec) * result.normalVec;
+			Color got = rayTraceRecursive(Ray(result.intersectPoint + DEVIATION * nd, nd), resultNext, recursiveDepth + 1, irefIndex);			
+			return e + color * got;
+			}
+		}
+
+		MyVec3 nd = ray.direction - 2.0 * MyVec3::dot(ray.direction, result.normalVec) * result.normalVec;
+		Ray reflRay(result.intersectPoint + DEVIATION * nd, nd);
+		double tIndex = result.primi->material()->getRefraIndex();
+		double nnt = ((in_out == 1) ? 1.0 / tIndex : irefIndex / 1.0);
+		double ddn = MyVec3::dot(ray.direction, nl), cos2t;
+		if ((cos2t = 1 - nnt * nnt * (1 - ddn * ddn)) < 0)    // Total internal reflection 
+			return e + color * rayTraceRecursive(reflRay, resultNext, recursiveDepth + 1, irefIndex); 
+		
+		MyVec3 tdir = (nnt * ray.direction - (in_out * (ddn * nnt + sqrt(cos2t))) * result.normalVec);
+		MyVec3::normalize(tdir); 
+
+		double a = tIndex - 1.0;
+		double b = tIndex + 1.0;
+		double c = 1 - (in_out == 1 ? -ddn : MyVec3::dot(tdir, result.normalVec));   
+		double R0 = a * a / (b * b);
+		double Re = R0 + (1 - R0) * c * c * c * c * c, Tr = 1 - Re;
+		double P = 0.25 + 0.5 * Re, RP = Re / P, TP = Tr / (1.0 - P); 
+		IntersectResult resultNext1;
+		return e + color * (recursiveDepth > 1 
+			? 
+			(Config::rand01() < P ? 
+				RP * rayTraceRecursive(reflRay, resultNext, recursiveDepth + 1, irefIndex) : 
+				TP * rayTraceRecursive(Ray(result.intersectPoint + DEVIATION * tdir, tdir), resultNext, recursiveDepth + 1, tIndex)) 
+			: 
+			Re * rayTraceRecursive(reflRay, resultNext, recursiveDepth + 1, irefIndex) + 
+			Tr * rayTraceRecursive(Ray(result.intersectPoint + DEVIATION * tdir, tdir), resultNext1, recursiveDepth + 1, tIndex)); 
+	}
+
+	void RayTracer::render(MyMat& img, Camera& camera)
+	{
+		double rows = img.getRow();
+		double cols = img.getCol();	
+		const int samps = 10;
+	//	for (double r = rows - 1; r >= 0; r--){
+		for (double r = 0; r < rows; r++){
+			fprintf(stderr,"\rRendering (%d spp) %5.2f%%",samps*4,100.*r/(rows-1)); 
+			for (double c = 0; c < cols; c++){
+				Color color;
+				for (int sr = 0; sr < 2; sr++)
+					for (int sc = 0; sc < 2; sc++){
+						Color temp;
+						for (int i = 0; i < samps; i++){
+							//double r1 = 2 * Config::rand01(), dc = r1 < 1 ? sqrt(r1) - 1 : 1 - sqrt(2 - r1); 
+							//double r2 = 2 * Config::rand01(), dr = r2 < 1 ? sqrt(r2) - 1 : 1 - sqrt(2 - r2); 
+
+							double r1 = 2 * 0.2, dc = r1 < 1 ? sqrt(r1) - 1 : 1 - sqrt(2 - r1); 
+							double r2 = 2 * 0.2, dr = r2 < 1 ? sqrt(r2) - 1 : 1 - sqrt(2 - r2);
+						//	double theta = prorand.rand01() * 2 * MYPI;
+						//	double v = 1 - (r + (sr + .5 + dr * sin(theta)) / 2) / rows;
+						//	double u = 1 - (c + (sc + .5 + dc * cos(theta)) / 2) / cols;					
+							double v = 1 - (r + (sr + .5 + dr) / 2) / rows;
+							double u = 1 - (c + (sc + .5 + dc) / 2) / cols;							
+							Ray ray;						
+							camera.emit(u
+								, v
+								, ray, 0);	
+							
+							//cout << u << " "<<  v <<" "<< ray << endl;	
+							IntersectResult result;
+							temp = temp + (1. / samps) * rayTraceRecursive(ray, result, 0, 1.0); 
+							
+						}
+						color = color + temp.clampColor();
+					}
+				color = 0.25 * color;
+				//img.pixel(r, c) = color.imgcolor();
+				img.setPixel(r,c,color.imgcolor());
+				//cout << color << endl;
+				for (int i = 0; i < 3; i++)
+					img.pixel(r, c)[i] = pow(img.pixel(r, c)[i], 1.0 / 2.2);
+			}
+			img.show("fifth");
+			waitKey(10);
+		}
+	}
+
+
+
+
+
+int RayTracer::nearest(Primitive* it,const Ray& ray,IntersectResult& result, int& re){
 	//int in_out = 0;
 	//if (it->getLastRay() != ray.getID()){
 	//	IntersectResult temp;
@@ -643,7 +815,7 @@ double RayTracer::calSoftShade(BoxLight* light, MyVec3 ip, MyVec3& L, const MyOb
 		MyVec3 dire = lightPoint - ip;
 		MyVec3::normalize(dire);
 		IntersectResult temp;
-		if (findNearest(Ray(ip + DEVIANCE * dire, dire), scene, temp) && (temp.primi == light) )
+		if (findNearest(Ray(ip + DEVIANCE * dire, dire),temp) && (temp.primi == light) )
 			re += sampleDown;
 	}
 	return re;
@@ -721,10 +893,11 @@ void RayTracer::readScene(char* file, MyObj& scene){
 
 MyVec3 objPoint[MAX_VERTEX_NUM];
 //#define HORSE
-#define DRAGON
-//#define CUBE
-void RayTracer::readObj(char* file, MyObj& scene){
-	
+//#define DRAGON
+#define CUBE
+void RayTracer::readObj(char* file, MyObj& scene, MyVec3 O, MyVec3 size, MyVec3 angles){
+	angles *= (PI / 180);
+
 	ifstream fin(file);
 	int now = 0;
 	cout << "***" << endl;
@@ -744,7 +917,7 @@ void RayTracer::readObj(char* file, MyObj& scene){
 				now++;
 				fin >> objPoint[now].x >> objPoint[now].y >> objPoint[now].z;
 #ifdef CUBE
-				double beishu = 2;
+				double beishu = 10;
 				 objPoint[now].x = objPoint[now].x / beishu + 0.8;
 				 objPoint[now].y = objPoint[now].y / beishu ;
 				 objPoint[now].z = objPoint[now].z / beishu;
@@ -756,10 +929,15 @@ void RayTracer::readObj(char* file, MyObj& scene){
 				 objPoint[now].z = objPoint[now].z * beishu + 5;;
 #endif
 #ifdef DRAGON
-				 double beishu = 3.3;
+				 double beishu = 100;
 				 objPoint[now].x = objPoint[now].x * beishu;
-				 objPoint[now].y = objPoint[now].y * beishu-2; ;
+				 objPoint[now].y = objPoint[now].y * beishu - 2; ;
 				 objPoint[now].z = objPoint[now].z * beishu + 7;
+
+				objPoint[now] = objPoint[now].Rotate(MyVec3(1, 0, 0), angles[0]);
+				objPoint[now] = objPoint[now].Rotate(MyVec3(0, 1, 0), angles[1]);
+				objPoint[now] = objPoint[now].Rotate(MyVec3(0, 0, 1), angles[2]);
+				objPoint[now] = O + objPoint[now] * size;
 
 #endif
 				// cout << objPoint[now] << endl;
@@ -767,25 +945,36 @@ void RayTracer::readObj(char* file, MyObj& scene){
 			else if (ch == 'f'){	//	face			
 				int a, b, c;
 				fin >> a >> b >> c;
-			//	Vec3 fxl = cross(obj[b] - obj[a], obj[a] - obj[c]);
+
 				//MyVec3 fxl = MyVec3::cross(objPoint[b] - objPoint[a], objPoint[a] - objPoint[c]);
 				MyVec3 fxl = MyVec3::cross(objPoint[c] - objPoint[a], objPoint[a] - objPoint[b]);
 				
 				if(fxl.module_2() < EPS * EPS)
 					continue;
 
-				MyVec3::normalize(fxl);	
-				Triangle* p = new Triangle(objPoint[a], objPoint[b], objPoint[c], fxl, new Phong(WHITE, 1, 0.8, 20, 0, 0, 0, 0));
-				//p->material()->SetTexture( new Texture( "textures/wood.tga" ) );
-				//p->material()->SetUVScale( 0.05, 0.05 );
+				MyVec3::normalize(fxl);
+
+				//cout << "ok" << endl;
+
+				Triangle* p = new Triangle(objPoint[a], objPoint[b], objPoint[c], fxl, new BRDF(Color(.75, .75, .75), BLACK, DIFF));
 				scene.tri_vec.push_back(p);	
-			
 			}
 		}
 	}
-	cout << "----" << endl;
+	
+	TriangleTree* tree = new TriangleTree();
+	TriangleNode* root = tree->GetRoot();
+	root->size = scene.tri_vec.size();
+	root->tris = new Triangle*[root->size];
+	for(int i = 0;i < root->size;i++){
+		root->tris[i] = scene.tri_vec[i];
+		root->box.Update(scene.tri_vec[i]);
+	}
+	tree->BuildTree();
+	scene.poly_vec.push_back(tree);
+	scene.tri_vec.clear();
+	
 	fin.close();
-	//cout << now <<  endl;
 }
 
 
