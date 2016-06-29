@@ -50,7 +50,7 @@ This repository holds the engine of image rendering, a project achieved by algor
 
 ## References
 
-<p>【1】<a href="www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_1_Introduction.shtml">
+<p>【1】<a href="http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_1_Introduction.shtml">
 Jacco Bikker, Raytracing Topics & Technology</a></p>
 
 <p>【2】<a href="http://www.kevinbeason.com/smallpt/">
