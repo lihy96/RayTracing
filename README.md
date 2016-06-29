@@ -26,9 +26,11 @@ This repository holds the engine of image rendering, a project achieved by algor
 ## Ray Tracing
 
 -Deep of field
+
 ![rt](https://raw.githubusercontent.com/lihy96/RayTracing/master/picture/jingshen2.png)
 
 -Soft shadow
+
 ![rt](https://raw.githubusercontent.com/lihy96/RayTracing/master/picture/multi2.png)
 
 -Different focus distance
