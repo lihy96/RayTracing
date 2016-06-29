@@ -42,7 +42,7 @@ public:
 	//ÎÆÀíÌùÍ¼µÄº¯Êý
 	void SetTexture( Texture* a_Texture ) { m_Texture = a_Texture; }
 	Texture* GetTexture() { return m_Texture; }
-	void Material::SetUVScale( double a_UScale, double a_VScale ){ 
+	void SetUVScale( double a_UScale, double a_VScale ){ 
 		m_UScale = a_UScale; 
 		m_VScale = a_VScale; 
 		m_RUScale = 1.0f / a_UScale;

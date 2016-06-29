@@ -37,7 +37,8 @@ void Camera::emit(double u, double v, Ray& ray, int)
 {
 	MyVec3 rightOffset = (u - 0.5) * spanScaler * right;
 	MyVec3 upOffset = (v - 0.5) * spanScaleu * up;
-	ray.direction = MyVec3::normalize(front + rightOffset + upOffset);
+	MyVec3 tmp = front + rightOffset + upOffset;
+	ray.direction = MyVec3::normalize(tmp);
 	ray.origin = eye;
 }
 

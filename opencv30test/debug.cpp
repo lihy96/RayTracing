@@ -1,5 +1,5 @@
 #include "debug.h"
-#include "mymat.h"
+#include "myMat.h"
 #include "color.h"
 #include <iostream>
 using namespace std;

@@ -9,9 +9,10 @@
 
 class MyMat
 {
-	cv::Mat mat;
 public:
-	MyMat(int _row,int _col) : mat(_row, _col, CV_64FC3, cv::Scalar::all(0)){};
+	cv::Mat mat;
+
+	MyMat(int _row=600,int _col=600) : mat(_row, _col, CV_64FC3, cv::Scalar::all(0)){};
 	~MyMat(){};
 	int getRow() {return mat.rows; }
 	int getCol() {return mat.cols; }

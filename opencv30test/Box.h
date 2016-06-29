@@ -1,7 +1,7 @@
 #ifndef BOX_H
 #define BOX_H
 
-#include "MyVec3.h"
+#include "myVec3.h"
 class IntersectResult;
 
 class Box
