@@ -12,12 +12,15 @@ This repository holds the engine of image rendering, a project achieved by algor
 ## Path Tracing
 
 -SPP 60000
+
 ![pt](https://raw.githubusercontent.com/lihy96/RayTracing/master/picture/SPP60000.png)
 
 -SPP 28000
+
 ![pt](https://raw.githubusercontent.com/lihy96/RayTracing/master/picture/SPP28000.png)
 
 -SPP 8800
+
 ![pt](https://raw.githubusercontent.com/lihy96/RayTracing/master/picture/SPP8800.png)
 
 ## Ray Tracing
